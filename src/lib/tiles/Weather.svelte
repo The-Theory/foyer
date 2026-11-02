@@ -56,12 +56,12 @@
 
 <div class="weather">
   {#if tile.lat === null}
-    <p class="hint">Pick a place for this tile in edit mode.</p>
+    <p class="hint">No city set</p>
   {:else if reading}
     <p class="temp">{Math.round(reading.temp)}°</p>
     <p class="cond">{condition(reading.code)}</p>
     <p class="meta"><span>{tile.place}</span><span>{Math.round(reading.hi)}° / {Math.round(reading.lo)}°</span></p>
   {:else if failed}
-    <p class="hint">Weather is unavailable right now.</p>
+    <p class="hint">Weather didn't load</p>
   {/if}
 </div>

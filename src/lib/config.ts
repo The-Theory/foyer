@@ -46,20 +46,19 @@ export interface Theme {
 
 export interface Config { version: 1; theme: Theme; tiles: Tile[] }
 
-export const kinds: Record<Kind, { name: string; size: [number, number] }> = {
-  link:    { name: 'Link',    size: [1, 1] },
-  group:   { name: 'Group',   size: [4, 2] },
-  clock:   { name: 'Clock',   size: [4, 2] },
-  weather: { name: 'Weather', size: [2, 2] },
-  note:    { name: 'Note',    size: [2, 2] },
+export const kinds: Record<Kind, { name: string; about: string; size: [number, number] }> = {
+  link:    { name: 'Link',    about: 'One site as a large icon',      size: [1, 1] },
+  group:   { name: 'Group',   about: 'Several links in one tile',     size: [4, 2] },
+  clock:   { name: 'Clock',   about: 'Time and date',                 size: [4, 2] },
+  weather: { name: 'Weather', about: 'Current conditions for a city', size: [2, 2] },
+  note:    { name: 'Note',    about: 'Text that saves as you type',   size: [2, 2] },
 }
 
 export const fonts: Record<string, string> = {
-  bricolage: "'Bricolage Grotesque Variable', system-ui, sans-serif",
-  system:    'system-ui, sans-serif',
-  rounded:   'ui-rounded, system-ui, sans-serif',
-  serif:     'ui-serif, Georgia, serif',
-  mono:      'ui-monospace, Menlo, monospace',
+  system:  "system-ui, -apple-system, 'Segoe UI', sans-serif",
+  rounded: 'ui-rounded, system-ui, sans-serif',
+  serif:   'ui-serif, Georgia, serif',
+  mono:    'ui-monospace, Menlo, monospace',
 }
 
 export const newId = () => crypto.randomUUID().slice(0, 8)
@@ -106,6 +105,9 @@ export function safeUrl(url: string) {
   return /^[a-z][a-z0-9+.-]*:/i.test(trimmed) ? trimmed : `https://${trimmed}`
 }
 
+// Pasted or dropped text that looks like an address: a scheme, or a bare domain.
+export const isUrl = (text: string) => /^(https?:\/\/\S+|[\w-]+(\.[\w-]+)+(\/\S*)?)$/i.test(text.trim())
+
 export const favicon = (url: string) => `https://www.google.com/s2/favicons?sz=128&domain=${encodeURIComponent(hostOf(url))}`
 
 // --- Defaults & parsing ------------------------------------------------------
@@ -116,10 +118,10 @@ export function defaultConfig(): Config {
   return {
     version: 1,
     theme: {
-      background: '#25242a', image: '', imageFit: 'cover', imagePosition: 'center', dim: 0,
+      background: '#222224', image: '', imageFit: 'cover', imagePosition: 'center', dim: 0,
       cols: 8, cell: 88, gap: 14, align: 'center', offset: 96,
-      tile: '#ffffff', tileOpacity: 0.06, blur: 14, radius: 20,
-      text: '#ecebe6', accent: '#b4a7ff', font: 'bricolage',
+      tile: '#ffffff', tileOpacity: 0.055, blur: 16, radius: 16,
+      text: '#f2f1ed', accent: '#f2f1ed', font: 'system',
       labels: 'hover', newTab: false, editCorner: true, pageTitle: 'New Tab', css: '',
     },
     tiles: [

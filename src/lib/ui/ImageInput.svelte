@@ -15,15 +15,12 @@
 <div class="field">
   <span>{label}</span>
   <div class="row">
-    <input
-      type="url"
-      placeholder="Paste an image URL"
-      value={isUpload ? '' : value}
-      oninput={e => (value = e.currentTarget.value)}
-      disabled={isUpload}
-    />
-    <label class="button">Upload<input type="file" accept="image/*" hidden onchange={pick} /></label>
-    {#if value}<button type="button" class="button" onclick={() => (value = '')}>Clear</button>{/if}
+    {#if isUpload}
+      <span class="file">Uploaded image</span>
+    {:else}
+      <input type="url" placeholder="Image address" bind:value />
+    {/if}
+    <label class="button">Upload<input type="file" accept="image/*" class="sr-only" onchange={pick} /></label>
+    {#if value}<button type="button" class="button" onclick={() => (value = '')}>Remove</button>{/if}
   </div>
-  {#if isUpload}<small>Using an uploaded image.</small>{/if}
 </div>

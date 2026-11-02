@@ -28,7 +28,11 @@ export function themeCss(t: Theme) {
 
 const area = (b: Box) => `grid-area:${b.y + 1}/${b.x + 1}/span ${b.h}/span ${b.w}`
 
-export function layoutCss(tiles: Tile[], drag: Drag | null, rows: number) {
-  const rules = tiles.map(t => `[data-tile="${t.id}"]{${area(drag?.id === t.id ? drag : t)}}`)
+export interface Ring { x: number; y: number; w: number; h: number; r: string }
+
+export function layoutCss(tiles: Tile[], drag: Drag | null, rows: number, ring: Ring | null) {
+  const rules = tiles.map(t => `[data-tile="${t.id}"]{${area(drag?.id === t.id && drag.mode === 'resize' ? drag : t)}}`)
+  if (drag?.mode === 'move') rules.push(`[data-tile="${drag.id}"]{translate:${drag.px}px ${drag.py}px}`, `.placeholder{${area(drag)}}`)
+  if (ring) rules.push(`.ring{translate:${ring.x}px ${ring.y}px;width:${ring.w}px;height:${ring.h}px;border-radius:calc(${ring.r} + 5px)}`)
   return `:root{--rows:${rows}}${rules.join('')}`
 }
