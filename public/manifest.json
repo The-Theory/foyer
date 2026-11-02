@@ -1,0 +1,17 @@
+{
+  "manifest_version": 3,
+  "name": "Foyer",
+  "version": "0.1.0",
+  "description": "A quiet new tab page you can arrange however you like.",
+  "icons": { "48": "icon.svg", "96": "icon.svg" },
+  "chrome_url_overrides": { "newtab": "index.html" },
+  "chrome_settings_overrides": { "homepage": "index.html" },
+  "permissions": ["storage", "unlimitedStorage", "search"],
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "foyer@theohallgren",
+      "strict_min_version": "140.0",
+      "data_collection_permissions": { "required": ["none"] }
+    }
+  }
+}
