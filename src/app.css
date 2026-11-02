@@ -43,11 +43,19 @@ body {
 }
 .page.align-top { justify-content: flex-start; padding-top: var(--offset); }
 
+/* Keep tiles visible beside the settings sheet when there's room. */
+@media (min-width: 1000px) {
+  .page.sheet-open { padding-right: 392px; }
+}
+
 .empty { color: var(--muted); text-align: center; max-width: 34ch; line-height: 1.5; }
 
 /* --- Grid ------------------------------------------------------------------ */
 
-.board { position: relative; }
+.board {
+  position: relative;
+  height: calc(var(--rows) * var(--cell) + (var(--rows) - 1) * var(--gap));
+}
 
 .grid {
   display: grid;
@@ -56,7 +64,7 @@ body {
   grid-auto-rows: var(--cell);
   gap: var(--gap);
 }
-.slots { position: absolute; inset: 0; pointer-events: none; }
+.slots { position: absolute; inset: 0 0 auto; pointer-events: none; }
 .slot  { border-radius: var(--radius); border: 1px dashed color-mix(in srgb, var(--text) 16%, transparent); }
 
 .tile {
@@ -285,7 +293,7 @@ body {
 .sheet h3 { margin: 12px 0 -4px; font-size: 13px; font-weight: 620; color: var(--accent); }
 .sheet .hint, .sheet small { color: var(--ui-muted); font-size: 12.5px; }
 .sheet .error { margin: 0; color: var(--ui-danger); font-size: 13px; }
-.sheet code { font-family: ui-monospace, Menlo, monospace; font-size: .92em; padding: 1px 5px; border-radius: 5px; background: var(--ui-2); }
+.sheet code { white-space: nowrap; font-family: ui-monospace, Menlo, monospace; font-size: .92em; padding: 1px 5px; border-radius: 5px; background: var(--ui-2); }
 
 .field { display: flex; flex-direction: column; gap: 6px; margin: 0; font-size: 13px; }
 .field > span { display: flex; justify-content: space-between; color: var(--ui-muted); }

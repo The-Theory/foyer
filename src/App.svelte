@@ -62,6 +62,7 @@
   <main
     class="page labels-{theme.labels} align-{theme.align}"
     class:editing={app.editing}
+    class:sheet-open={app.editing && app.sheet}
     onpointerdown={press}
     onpointerup={release}
     onpointerleave={release}

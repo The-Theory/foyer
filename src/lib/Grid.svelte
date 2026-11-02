@@ -14,8 +14,11 @@
 
   const tiles = $derived(app.config.tiles)
   const cols  = $derived(app.config.theme.cols)
-  const rows  = $derived(Math.max(1, ...tiles.map(t => t.y + t.h)) + (app.editing ? 2 : 0))
+  const rows  = $derived(Math.max(1, ...tiles.map(t => t.y + t.h)))
   const css   = $derived(layoutCss(tiles, app.drag, rows))
+
+  // Spare rows below the layout to drag into; they overflow the board so the page doesn't shift.
+  const slotRows = $derived(Math.max(rows, (app.drag?.y ?? 0) + (app.drag?.h ?? 0)) + 3)
 
   const clamp = (n: number, min: number, max: number) => Math.min(Math.max(n, min), max)
   const label = (tile: Tile) => tile.kind === 'link' ? tile.link.title || 'Link' : tile.kind === 'group' ? tile.title : kinds[tile.kind].name
@@ -87,7 +90,7 @@
 <div class="board">
   {#if app.editing}
     <div class="grid slots" aria-hidden="true">
-      {#each { length: cols * rows }, i (i)}<div class="slot"></div>{/each}
+      {#each { length: cols * slotRows }, i (i)}<div class="slot"></div>{/each}
     </div>
   {/if}
 
