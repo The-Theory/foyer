@@ -1,7 +1,7 @@
 <script lang="ts">
   import { tick, untrack } from 'svelte'
   import { fade, scale } from 'svelte/transition'
-  import { fits, isUrl, kinds, newLink, type Box, type Tile } from './config'
+  import { fits, isUrl, kinds, linkName, newLink, type Box, type Tile } from './config'
   import { layoutCss, type Ring } from './css'
   import { arrows, firstIn, isNavTarget, navTarget } from './nav'
   import { addTile, app, ease, handleEls, keys, ms, removeTile, tileEls } from './state.svelte'
@@ -25,7 +25,7 @@
   const slotRows = $derived(Math.max(rows, (app.drag?.y ?? 0) + (app.drag?.h ?? 0)) + 3)
 
   const clamp = (n: number, min: number, max: number) => Math.min(Math.max(n, min), max)
-  const label = (tile: Tile) => (tile.kind === 'link' ? tile.link.title || 'Link' : tile.kind === 'group' ? tile.title : kinds[tile.kind].name)
+  const label = (tile: Tile) => (tile.kind === 'link' ? linkName(tile.link) || 'Link' : tile.kind === 'group' ? tile.title : kinds[tile.kind].name)
   const lifted = (tile: Tile) => app.grab?.id === tile.id || (app.drag?.id === tile.id && app.drag.mode === 'move')
 
   // --- Focus ring --------------------------------------------------------------
@@ -65,6 +65,8 @@
       const id = focusedTile
       if (!id) return
       await tick()
+      const active = document.activeElement
+      if (active && active !== document.body && !board.contains(active)) return
       const el = tileEls[id]
       ;(editing ? handleEls[id] : el && firstIn(el, 'view'))?.focus()
     })

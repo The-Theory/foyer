@@ -46,7 +46,6 @@
   let pressTimer = 0
   let pressAt    = { x: 0, y: 0 }
   function press(e: PointerEvent) {
-    app.keyboard = false
     const target = e.target as Element
     if (app.editing || e.button !== 0 || target.closest('.tile, .palette, .corner')) return
     pressAt    = { x: e.clientX, y: e.clientY }
@@ -127,7 +126,7 @@
   <svelte:element this={'style'}>{css}</svelte:element>
 </svelte:head>
 
-<svelte:window {onkeydown} {onpaste} onpagehide={flush} />
+<svelte:window {onkeydown} {onpaste} onpagehide={flush} onpointerdowncapture={() => (app.keyboard = false)} />
 
 {#if app.ready}
   <main

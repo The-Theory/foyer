@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { focusOnMount } from './nav'
   import { defaultConfig, parseConfig } from './config'
   import { app, closeSheet } from './state.svelte'
+  import ColorInput from './ui/ColorInput.svelte'
   import ImageInput from './ui/ImageInput.svelte'
   import Range from './ui/Range.svelte'
   import Segmented from './ui/Segmented.svelte'
@@ -34,7 +34,7 @@
 </header>
 
 <h3>Background</h3>
-<label class="field color"><span>Color</span><input type="color" bind:value={t.background} use:focusOnMount /></label>
+<ColorInput label="Color" bind:value={t.background} autofocus />
 <ImageInput label="Image" bind:value={t.image} />
 {#if t.image}
   <Segmented label="Fit" options={[['cover', 'Fill'], ['contain', 'Fit'], ['auto', 'Actual size']]} bind:value={t.imageFit} />
@@ -50,14 +50,14 @@
 {#if t.align === 'top'}<Range label="Space above" min={0} max={400} unit="px" bind:value={t.offset} />{/if}
 
 <h3>Tiles</h3>
-<label class="field color"><span>Color</span><input type="color" bind:value={t.tile} /></label>
+<ColorInput label="Color" bind:value={t.tile} />
 <Range label="Opacity" min={0} max={1} step={0.01} unit="%" bind:value={t.tileOpacity} />
 <Range label="Blur behind" min={0} max={40} unit="px" bind:value={t.blur} />
 <Range label="Corner radius" min={0} max={60} unit="px" bind:value={t.radius} />
 
 <h3>Text</h3>
-<label class="field color"><span>Text color</span><input type="color" bind:value={t.text} /></label>
-<label class="field color"><span>Highlight color</span><input type="color" bind:value={t.accent} /></label>
+<ColorInput label="Text color" bind:value={t.text} />
+<ColorInput label="Highlight color" bind:value={t.accent} />
 <label class="field">
   <span>Font</span>
   <input list="fonts" bind:value={t.font} placeholder="Any font installed on this computer" />
