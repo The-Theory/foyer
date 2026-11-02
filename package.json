@@ -10,7 +10,8 @@
     "check": "svelte-check --tsconfig ./tsconfig.app.json && tsc -p tsconfig.node.json",
     "firefox": "vite build && web-ext run -s dist",
     "package": "vite build && web-ext build -s dist -a release --overwrite-dest",
-    "lint:ext": "vite build && web-ext lint -s dist"
+    "lint:ext": "vite build && web-ext lint -s dist",
+    "sign": "vite build && web-ext sign -s dist --channel unlisted -a release"
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^7.3.1",
