@@ -60,7 +60,7 @@ kbd {
   height: 100vh;
   overflow: hidden;
   box-sizing: border-box;
-  padding: 72px;
+  padding: 40px 40px 76px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -178,11 +178,15 @@ kbd {
 .labels-never  .layout-grid .label { display: none; }
 
 /* Tile contents are measured in --u, 1/88 of a cell, so they scale with the board like a picture. */
-.tile { --u: calc(var(--cell) / 88); }
+.tile {
+  --u:   calc(var(--cell) / 78);
+  /* Inner padding grows with the corner rounding so text never runs into a curve. */
+  --pad: calc(var(--u) * 14 + var(--radius) * .3);
+}
 
 /* Group tile: its links are always visible, no folder to open. */
-.group { position: absolute; inset: 0; box-sizing: border-box; padding: calc(var(--u) * 12); display: flex; flex-direction: column; gap: calc(var(--u) * 8); }
-.group h2 { margin: calc(var(--u) * 2) calc(var(--u) * 6) 0; font-size: calc(var(--u) * 12.5); font-weight: 600; color: var(--muted); }
+.group { position: absolute; inset: 0; box-sizing: border-box; padding: var(--pad); display: flex; flex-direction: column; gap: calc(var(--u) * 8); }
+.group h2 { margin: calc(var(--u) * 2) calc(var(--u) * 4) 0; font-size: calc(var(--u) * 12.5); font-weight: 600; color: var(--muted); }
 .group .hint { margin: 0 calc(var(--u) * 6); }
 .group .items { overflow-y: auto; scrollbar-width: none; min-height: 0; padding: calc(var(--u) * 4); margin: calc(var(--u) * -4); }
 
@@ -195,7 +199,7 @@ kbd {
 .layout-list .icon  { width: calc(var(--u) * 20); height: calc(var(--u) * 20); font-size: calc(var(--u) * 11); }
 
 /* Clock */
-.clock { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: center; padding: 0 5cqw; }
+.clock { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: center; padding: 0 max(5cqw, var(--pad)); }
 .time {
   font-size: min(60cqh, 26cqw);
   font-weight: 200;
@@ -207,7 +211,7 @@ kbd {
 .date   { margin: 5cqh 0 0 .1em; font-size: 10cqh; color: var(--muted); }
 
 /* Weather: type only. */
-.weather { position: absolute; inset: 0; box-sizing: border-box; padding: 11cqmin; display: flex; flex-direction: column; }
+.weather { position: absolute; inset: 0; box-sizing: border-box; padding: max(11cqmin, var(--pad)); display: flex; flex-direction: column; }
 .weather p { margin: 0; }
 .temp { font-size: 40cqmin; font-weight: 200; line-height: .9; letter-spacing: -.04em; }
 .weather .cond { margin-top: auto; font-size: 9.5cqmin; font-weight: 550; }
@@ -221,7 +225,7 @@ kbd {
   box-sizing: border-box;
   width: 100%;
   height: 100%;
-  padding: calc(var(--u) * 14) calc(var(--u) * 16);
+  padding: var(--pad);
   resize: none;
   border: 0;
   outline: none;
