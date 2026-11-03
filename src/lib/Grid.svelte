@@ -10,10 +10,13 @@
   import LinkItem from './ui/LinkItem.svelte'
 
   type Mode = 'move' | 'resize'
+  // Which sides a resize drags: compass letters, e.g. 'se' for the bottom-right corner.
+  const edges = ['n', 's', 'e', 'w', 'ne', 'nw', 'se', 'sw'] as const
+  type Edge = (typeof edges)[number]
 
   let board: HTMLDivElement
   let grid: HTMLDivElement
-  let action: { tile: Tile; mode: Mode; x0: number; y0: number; moved: boolean } | null = null
+  let action: { tile: Tile; mode: Mode; edge: Edge; x0: number; y0: number; moved: boolean } | null = null
   let swallowClick = false
   let dragInside   = false
 
@@ -118,10 +121,14 @@
     return { x: clamp(Math.floor((e.clientX - rect.left) / pitch()), 0, cols - 1), y: Math.max(0, Math.floor((e.clientY - rect.top) / pitch())) }
   }
 
-  function boxFor(tile: Tile, mode: Mode, dx: number, dy: number): Box {
-    return mode === 'move'
-      ? { x: clamp(tile.x + dx, 0, cols - tile.w), y: Math.max(0, tile.y + dy), w: tile.w, h: tile.h }
-      : { x: tile.x, y: tile.y, w: clamp(tile.w + dx, 1, cols - tile.x), h: Math.max(1, tile.h + dy) }
+  function boxFor(tile: Tile, mode: Mode, dx: number, dy: number, edge: Edge = 'se'): Box {
+    if (mode === 'move') return { x: clamp(tile.x + dx, 0, cols - tile.w), y: Math.max(0, tile.y + dy), w: tile.w, h: tile.h }
+    let { x, y, w, h } = tile
+    if (edge.includes('e')) w = clamp(w + dx, 1, cols - x)
+    if (edge.includes('s')) h = Math.max(1, h + dy)
+    if (edge.includes('w')) [x, w] = [clamp(x + dx, 0, x + w - 1), x + w - clamp(x + dx, 0, x + w - 1)]
+    if (edge.includes('n')) [y, h] = [clamp(y + dy, 0, y + h - 1), y + h - clamp(y + dy, 0, y + h - 1)]
+    return { x, y, w, h }
   }
 
   function place(tile: Tile, box: Box) {
@@ -130,22 +137,22 @@
     return true
   }
 
-  function start(e: PointerEvent, tile: Tile, mode: Mode) {
+  function start(e: PointerEvent, tile: Tile, mode: Mode, edge: Edge = 'se') {
     if (e.button !== 0) return
     e.stopPropagation()
     ;(e.currentTarget as Element).setPointerCapture(e.pointerId)
-    action = { tile, mode, x0: e.clientX, y0: e.clientY, moved: false }
+    action = { tile, mode, edge, x0: e.clientX, y0: e.clientY, moved: false }
   }
 
   function move(e: PointerEvent) {
     if (!action) return
-    const { tile, mode, x0, y0 } = action
+    const { tile, mode, edge, x0, y0 } = action
     const px = e.clientX - x0
     const py = e.clientY - y0
     if (!action.moved && Math.hypot(px, py) < 4) return
     action.moved = true
     const size = pitch()
-    const box  = boxFor(tile, mode, Math.round(px / size), Math.round(py / size))
+    const box  = boxFor(tile, mode, Math.round(px / size), Math.round(py / size), edge)
     app.drag = { id: tile.id, ...box, mode, valid: fits(box, tiles, tile.id), px: mode === 'move' ? px : 0, py: mode === 'move' ? py : 0 }
   }
 
@@ -368,7 +375,9 @@
             onclick={e => select(e, tile)}
             onkeydown={e => onkey(e, tile)}
           >
-            <span class="resize" aria-hidden="true" onpointerdown={e => start(e, tile, 'resize')}></span>
+            {#each edges as edge (edge)}
+              <span class="resize {edge}" aria-hidden="true" onpointerdown={e => start(e, tile, 'resize', edge)}></span>
+            {/each}
           </button>
         {/if}
       </div>

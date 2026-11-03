@@ -22,7 +22,8 @@
   --hover: color-mix(in srgb, var(--text) 7%, transparent);
 }
 
-html, body { margin: 0; min-height: 100%; }
+/* The page never scrolls in any direction; panels scroll inside themselves. */
+html, body { margin: 0; height: 100%; overflow: hidden; overscroll-behavior: none; }
 
 body {
   background-color: var(--bg);
@@ -52,7 +53,8 @@ kbd {
 }
 
 .page {
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
   box-sizing: border-box;
   padding: 32px 16px 96px;
   display: flex;
@@ -247,8 +249,18 @@ kbd {
 .selected .handle { outline: 1.5px solid var(--accent); }
 .invalid .handle { outline-color: var(--ui-danger); }
 
-.resize { position: absolute; right: 0; bottom: 0; width: 24px; height: 24px; cursor: nwse-resize; }
-.resize::after {
+/* Every edge and corner resizes; the middle moves. */
+.resize { position: absolute; --edge: 10px; --corner: 22px; }
+.resize:is(.n, .s) { left: var(--corner); right: var(--corner); height: var(--edge); cursor: ns-resize; }
+.resize:is(.e, .w) { top: var(--corner); bottom: var(--corner); width: var(--edge); cursor: ew-resize; }
+.resize:is(.ne, .nw, .se, .sw) { width: var(--corner); height: var(--corner); }
+.resize:is(.n, .ne, .nw) { top: 0; }
+.resize:is(.s, .se, .sw) { bottom: 0; }
+.resize:is(.e, .ne, .se) { right: 0; }
+.resize:is(.w, .nw, .sw) { left: 0; }
+.resize:is(.ne, .sw) { cursor: nesw-resize; }
+.resize:is(.nw, .se) { cursor: nwse-resize; }
+.resize.se::after {
   content: '';
   position: absolute;
   right: 7px;
