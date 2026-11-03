@@ -3,9 +3,6 @@
 
 :root {
   --cell:      min(var(--cell-max), calc((100cqw - (var(--cols) - 1) * var(--gap)) / var(--cols)));
-  --muted:     color-mix(in srgb, var(--text) 58%, transparent);
-  --faint:     color-mix(in srgb, var(--text) 22%, transparent);
-  --hover:     color-mix(in srgb, var(--text) 7%, transparent);
   --ease:      cubic-bezier(.2, .9, .25, 1);
 
   --ui:        #19191b;
@@ -16,6 +13,13 @@
   --ui-muted:  #9a9993;
   --ui-danger: #ff7b6b;
   --ui-font:   system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
+/* Redeclared per tile so tints follow a tile's own text color. */
+:root, .tile {
+  --muted: color-mix(in srgb, var(--text) 58%, transparent);
+  --faint: color-mix(in srgb, var(--text) 22%, transparent);
+  --hover: color-mix(in srgb, var(--text) 7%, transparent);
 }
 
 html, body { margin: 0; min-height: 100%; }
@@ -83,7 +87,7 @@ kbd {
 }
 
 /* Edit mode draws the grid as corner marks, like a cutting mat. */
-.slots { position: absolute; inset: 0 0 auto; pointer-events: none; }
+.slots { position: absolute; inset: 0 0 auto; cursor: cell; touch-action: none; }
 .slot {
   --mark: linear-gradient(var(--faint), var(--faint));
   background:
@@ -92,19 +96,25 @@ kbd {
     var(--mark) left bottom / 7px 1px, var(--mark) left bottom / 1px 7px,
     var(--mark) right bottom / 7px 1px, var(--mark) right bottom / 1px 7px;
   background-repeat: no-repeat;
+  border-radius: var(--radius);
+  transition: background-color .15s;
 }
+.slot:hover { background-color: var(--hover); }
 
 .tile {
   position: relative;
   container-type: size;
   min-width: 0;
   border-radius: var(--radius);
+  color: var(--text);
+  font-family: var(--font);
   transition: scale .2s var(--ease), box-shadow .2s var(--ease), background-color .2s;
 }
 .tile.frame { background: var(--tile); backdrop-filter: blur(var(--blur)); }
 .tile.lifted { z-index: 5; scale: 1.03; box-shadow: 0 22px 44px -16px rgb(0 0 0 / .6); }
 
 .placeholder {
+  position: relative;
   border-radius: var(--radius);
   background: var(--hover);
   outline: 1px solid var(--faint);
@@ -136,7 +146,7 @@ kbd {
 .item:hover { background: var(--hover); }
 .label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
 
-.icon { display: block; flex: none; object-fit: contain; border-radius: 22%; }
+.icon { display: block; flex: none; object-fit: contain; border-radius: var(--icon-radius); }
 .glyph { display: grid; place-items: center; background: var(--hover); color: var(--text); font-weight: 600; line-height: 1; }
 .glyph svg { width: 56%; height: 56%; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; }
 
@@ -151,7 +161,7 @@ kbd {
   align-items: center;
   justify-content: center;
 }
-[data-kind='link'] .icon  { width: 44cqmin; height: 44cqmin; font-size: 20cqmin; transition: translate .2s var(--ease); }
+[data-kind='link'] .icon  { width: var(--icon-size); height: var(--icon-size); font-size: calc(var(--icon-size) * .45); transition: translate .2s var(--ease); }
 [data-kind='link'] .label { position: absolute; bottom: 10cqmin; max-width: 86%; font-size: max(11px, 11.5cqmin); transition: opacity .2s; }
 .labels-always [data-kind='link'] .icon,
 .labels-hover  [data-kind='link'] .item:is(:hover, :focus-visible) .icon { translate: 0 -9cqmin; }
@@ -172,7 +182,7 @@ kbd {
 
 .layout-list .items { display: flex; flex-direction: column; gap: 1px; }
 .layout-list .item  { display: flex; align-items: center; gap: 11px; padding: 7px 8px; border-radius: 9px; font-size: 14px; }
-.layout-list .icon  { width: 20px; height: 20px; font-size: 11px; border-radius: 6px; }
+.layout-list .icon  { width: 20px; height: 20px; font-size: 11px; }
 
 /* Clock */
 .clock { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: center; padding: 0 5cqw; }
@@ -255,7 +265,7 @@ kbd {
 
 /* --- Chrome ---------------------------------------------------------------- */
 
-.toolbar, .sheet, .palette, .corner, .help { font-family: var(--ui-font); color: var(--ui-text); }
+.toolbar, .sheet, .palette, .corner, .help, .picker { font-family: var(--ui-font); color: var(--ui-text); }
 
 .button {
   display: inline-flex;
@@ -308,49 +318,43 @@ kbd {
 .toolbar > .button:not(.primary):hover { background: var(--ui-2); }
 .divider { align-self: stretch; width: 1px; margin: 4px; background: var(--ui-line); }
 
-.menu-anchor { position: relative; }
-.menu-anchor > .button { background: transparent; }
-.menu-anchor > .button:hover, .menu-anchor > .button[aria-expanded='true'] { background: var(--ui-2); }
+.tip { padding: 0 10px; font-size: 13px; color: var(--ui-muted); white-space: nowrap; }
 
-.menu {
+/* Picks what goes in a newly drawn box. */
+.picker {
   position: absolute;
-  left: -6px;
-  bottom: calc(100% + 12px);
-  width: 310px;
-  padding: 6px;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 8;
+  width: 180px;
+  padding: 5px;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 1px;
+  font-family: var(--ui-font);
   background: var(--ui);
   border: 1px solid var(--ui-line);
-  border-radius: 14px;
+  border-radius: 12px;
   box-shadow: 0 24px 60px -24px #000;
+  outline: none;
+  transform-origin: top left;
 }
-.menu button {
+.picker.up { top: auto; bottom: calc(100% + 8px); transform-origin: bottom left; }
+.picker button {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 9px 10px;
+  justify-content: space-between;
+  padding: 8px 10px;
   border: 0;
-  border-radius: 9px;
+  border-radius: 8px;
   background: none;
-  color: inherit;
+  color: var(--ui-text);
   font: inherit;
+  font-size: 14px;
   text-align: left;
   cursor: pointer;
 }
-.menu button:is(:hover, :focus-visible) { background: var(--ui-2); outline: none; }
-.menu .text { flex: 1; display: flex; flex-direction: column; gap: 1px; }
-.menu strong { font-size: 14px; font-weight: 550; }
-.menu small { font-size: 12.5px; color: var(--ui-muted); }
-
-/* Each tile type previewed at its starting size. */
-.shape { flex: none; display: grid; gap: 2px; place-content: center; width: 44px; height: 28px; }
-.shape span { width: 8px; height: 8px; border-radius: 2px; background: #ffffff38; }
-.shape.w1 { grid-template-columns: repeat(1, 8px); }
-.shape.w2 { grid-template-columns: repeat(2, 8px); }
-.shape.w3 { grid-template-columns: repeat(3, 8px); }
-.shape.w4 { grid-template-columns: repeat(4, 8px); }
+.picker button:is(:hover, :focus-visible) { background: var(--ui-2); outline: none; }
 
 .sheet {
   position: fixed;

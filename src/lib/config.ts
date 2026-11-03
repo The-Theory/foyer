@@ -9,7 +9,12 @@ export interface Link { id: string; title: string; url: string; icon: Icon }
 
 export interface Box { x: number; y: number; w: number; h: number }
 
-interface TileBase extends Box { id: string; frame: boolean }
+// Appearance settings a single tile can override; unset keys follow the page.
+export const styleKeys = ['tile', 'tileOpacity', 'blur', 'radius', 'text', 'font', 'iconSize', 'iconRadius'] as const
+export type StyleKey  = (typeof styleKeys)[number]
+export type TileStyle = Partial<Pick<Theme, StyleKey>>
+
+interface TileBase extends Box { id: string; frame: boolean; style: TileStyle }
 
 export type LinkTile    = TileBase & { kind: 'link'; link: Link }
 export type GroupTile   = TileBase & { kind: 'group'; title: string; showTitle: boolean; layout: 'grid' | 'list'; links: Link[] }
@@ -37,6 +42,8 @@ export interface Theme {
   text: string
   accent: string
   font: string
+  iconSize: number
+  iconRadius: number
   labels: 'always' | 'hover' | 'never'
   newTab: boolean
   editCorner: boolean
@@ -66,7 +73,7 @@ export const newId = () => crypto.randomUUID().slice(0, 8)
 export const newLink = (title = '', url = ''): Link => ({ id: newId(), title, url, icon: { type: 'auto' } })
 
 export function newTile(kind: Kind, box: Box): Tile {
-  const base = { id: newId(), frame: true, ...box }
+  const base = { id: newId(), frame: true, style: {}, ...box }
   switch (kind) {
     case 'link':    return { ...base, kind, link: newLink() }
     case 'group':   return { ...base, kind, title: 'New group', showTitle: true, layout: 'grid', links: [] }
@@ -121,7 +128,7 @@ export function defaultConfig(): Config {
       background: '#222224', image: '', imageFit: 'cover', imagePosition: 'center', dim: 0,
       cols: 8, cell: 88, gap: 14, align: 'center', offset: 96,
       tile: '#ffffff', tileOpacity: 0.055, blur: 16, radius: 16,
-      text: '#f2f1ed', accent: '#f2f1ed', font: 'system',
+      text: '#f2f1ed', accent: '#f2f1ed', font: 'system', iconSize: 44, iconRadius: 22,
       labels: 'hover', newTab: false, editCorner: true, pageTitle: 'New Tab', css: '',
     },
     tiles: [

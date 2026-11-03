@@ -14,7 +14,7 @@
   const links = $derived(app.config.tiles.flatMap(t => (t.kind === 'link' ? [t.link] : t.kind === 'group' ? t.links : [])))
 
   const commands: Result[] = [
-    { type: 'command', id: 'edit', name: 'Edit layout', hint: `${keys.alt} E`, run: () => setEditing(true) },
+    { type: 'command', id: 'edit', name: 'Edit layout', hint: `${keys.mod} E`, run: () => setEditing(true) },
     { type: 'command', id: 'appearance', name: 'Change appearance', run: openAppearance },
     ...Object.entries(kinds).map(([kind, { name }]): Result => ({
       type: 'command', id: `add-${kind}`, name: `Add ${name.toLowerCase()} tile`, run: () => addTile(kind as Kind),

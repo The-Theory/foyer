@@ -1,11 +1,11 @@
 <script lang="ts">
   import { fade, fly } from 'svelte/transition'
-  import { isUrl, kinds, newLink, type Kind } from './lib/config'
+  import { isUrl, newLink } from './lib/config'
   import { themeCss } from './lib/css'
   import Grid from './lib/Grid.svelte'
   import { arrows, focusOnMount, step } from './lib/nav'
   import Palette from './lib/Palette.svelte'
-  import { addTile, app, closeSheet, findTile, flush, keys, load, ms, openAppearance, persist, redo, setEditing, undo } from './lib/state.svelte'
+  import { addTile, app, closeSheet, findTile, flush, keys, load, ms, openAppearance, persist, redo, setEditing, startDraft, undo } from './lib/state.svelte'
   import ThemeEditor from './lib/ThemeEditor.svelte'
   import TileEditor from './lib/TileEditor.svelte'
 
@@ -13,12 +13,10 @@
   persist()
 
   const theme = $derived(app.config.theme)
-  const css   = $derived(themeCss(theme))
+  const css   = $derived(themeCss(app.config))
   const tile  = $derived(app.sheet?.kind === 'tile' ? findTile(app.sheet.id) : undefined)
   const slide = { x: 24, duration: ms(220), easing: (t: number) => 1 - (1 - t) ** 3 }
   const rise  = { y: 12, duration: ms(200), easing: (t: number) => 1 - (1 - t) ** 3 }
-
-  const kindList = Object.entries(kinds) as [Kind, (typeof kinds)[Kind]][]
 
   const shortcuts: [string, [string, string][]][] = [
     ['Anywhere', [
@@ -26,19 +24,20 @@
       ['Arrow keys', 'Move between links'],
       [`${keys.mod} Enter`, 'Open in a new tab'],
       [`${keys.mod} V`, 'Add a copied address as a link'],
-      [`${keys.alt} E`, 'Edit layout'],
+      [`Esc or ${keys.mod} E`, 'Edit layout'],
       ['?', 'Show this list'],
     ]],
     ['While editing', [
+      ['Click or drag', 'Add a tile on empty space'],
       ['Arrow keys', 'Move between tiles'],
       ['Space', 'Pick up or drop the focused tile'],
       [`Arrows, ${keys.shift} arrows`, 'Move or resize a picked-up tile'],
       ['Enter', 'Tile settings'],
       ['Delete', 'Delete the focused tile'],
-      ['A', 'Add a tile'],
+      ['A', 'Add a tile in the next free space'],
       [',', 'Appearance'],
       [`${keys.mod} Z, ${keys.shift} ${keys.mod} Z`, 'Undo, redo'],
-      ['Esc', 'Close the panel, then stop editing'],
+      [`Esc or ${keys.mod} E`, 'Close the panel, then stop editing'],
     ]],
   ]
 
@@ -57,28 +56,24 @@
   const typing = (target: EventTarget | null) =>
     target instanceof HTMLElement && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName))
 
-  function add(kind: Kind) {
-    app.menu = null
-    addTile(kind)
-  }
-
   function onkeydown(e: KeyboardEvent) {
     if (e.key === 'Tab' || arrows[e.key]) app.keyboard = true
     if (e.defaultPrevented || app.palette !== null) return
 
     const mod = e.metaKey || e.ctrlKey
     if (mod && e.key.toLowerCase() === 'z' && !typing(e.target)) return e.preventDefault(), e.shiftKey ? redo() : undo()
-    if (e.altKey && e.code === 'KeyE') return e.preventDefault(), setEditing(!app.editing)
+    if (mod && e.code === 'KeyE') return e.preventDefault(), setEditing(!app.editing)
 
     if (e.key === 'Escape') {
       const inSheet = (e.target as Element).closest('.sheet')
       if (typing(e.target) && !inSheet) return (e.target as HTMLElement).blur()
       if (app.menu) app.menu = null
+      else if (app.draft) app.draft = null
       else if (app.sheet) closeSheet()
-      else if (app.editing) setEditing(false)
+      else setEditing(!app.editing)
       return
     }
-    if (typing(e.target) || app.menu || mod || e.altKey) return
+    if (typing(e.target) || app.menu || app.draft || mod || e.altKey) return
 
     const dir = arrows[e.key]
     if (dir) {
@@ -89,7 +84,7 @@
 
     const key = e.key.toLowerCase()
     if (key === '?') app.menu = 'help'
-    else if (app.editing && key === 'a') app.menu = 'add'
+    else if (app.editing && key === 'a') startDraft()
     else if (app.editing && key === ',') openAppearance()
     else if (!app.editing && e.key.length === 1 && e.key.trim()) app.palette = e.key
     else return
@@ -101,22 +96,6 @@
     if (typing(e.target) || !isUrl(text)) return
     e.preventDefault()
     addTile('link', { link: newLink('', text) })
-  }
-
-  // Add menu: arrows, number keys and Enter.
-  let menuItems: HTMLButtonElement[] = $state([])
-  $effect(() => {
-    if (app.menu === 'add') menuItems[0]?.focus()
-  })
-
-  function menuKey(e: KeyboardEvent, i: number) {
-    const n = Number(e.key)
-    if (n >= 1 && n <= kindList.length) add(kindList[n - 1][0])
-    else if (e.key === 'ArrowDown') menuItems[(i + 1) % kindList.length]?.focus()
-    else if (e.key === 'ArrowUp') menuItems[(i - 1 + kindList.length) % kindList.length]?.focus()
-    else return
-    e.preventDefault()
-    e.stopPropagation()
   }
 
 </script>
@@ -141,7 +120,7 @@
     <Grid />
 
     {#if !app.config.tiles.length && !app.editing}
-      <p class="empty">No tiles yet. Press <kbd>{keys.alt} E</kbd> to add some, or paste an address.</p>
+      <p class="empty">No tiles yet. Press <kbd>Esc</kbd> and click anywhere to add one, or paste an address.</p>
     {/if}
 
     {#if app.palette}
@@ -151,24 +130,7 @@
 
   {#if app.editing}
     <nav class="toolbar" aria-label="Editing" transition:fly={rise}>
-      <div class="menu-anchor">
-        <button class="button" aria-expanded={app.menu === 'add'} onclick={() => (app.menu = app.menu === 'add' ? null : 'add')}>
-          Add tile <kbd>A</kbd>
-        </button>
-        {#if app.menu === 'add'}
-          <div class="menu" role="menu" aria-label="Add a tile" transition:fly={rise}>
-            {#each kindList as [kind, { name, about, size }], i (kind)}
-              <button role="menuitem" onclick={() => add(kind)} onkeydown={e => menuKey(e, i)} bind:this={menuItems[i]}>
-                <span class="shape w{size[0]} h{size[1]}" aria-hidden="true">
-                  {#each { length: size[0] * size[1] }, c (c)}<span></span>{/each}
-                </span>
-                <span class="text"><strong>{name}</strong><small>{about}</small></span>
-                <kbd>{i + 1}</kbd>
-              </button>
-            {/each}
-          </div>
-        {/if}
-      </div>
+      <span class="tip">Click or drag on empty space to add a tile</span>
       <button class="button" aria-pressed={app.sheet?.kind === 'theme'} onclick={() => (app.sheet?.kind === 'theme' ? closeSheet() : openAppearance())}>
         Appearance <kbd>,</kbd>
       </button>
@@ -184,7 +146,7 @@
     {/if}
   {:else if theme.editCorner || !app.config.tiles.length}
     <div class="corner">
-      <button class="button" onclick={() => setEditing(true)}>Edit <kbd>{keys.alt} E</kbd></button>
+      <button class="button" onclick={() => setEditing(true)}>Edit <kbd>{keys.mod} E</kbd></button>
     </div>
   {/if}
 

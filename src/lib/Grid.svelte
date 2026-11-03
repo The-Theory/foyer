@@ -1,9 +1,9 @@
 <script lang="ts">
   import { tick, untrack } from 'svelte'
   import { fade, scale } from 'svelte/transition'
-  import { fits, isUrl, kinds, linkName, newLink, type Box, type Tile } from './config'
+  import { fits, isUrl, kinds, linkName, newLink, type Box, type Kind, type Tile } from './config'
   import { layoutCss, type Ring } from './css'
-  import { arrows, firstIn, isNavTarget, navTarget } from './nav'
+  import { arrows, firstIn, focusOnMount, isNavTarget, navTarget } from './nav'
   import { addTile, app, ease, handleEls, keys, ms, removeTile, tileEls } from './state.svelte'
   import Clock from './tiles/Clock.svelte'
   import Weather from './tiles/Weather.svelte'
@@ -22,7 +22,8 @@
   const rows  = $derived(Math.max(1, ...tiles.map(t => t.y + t.h)))
 
   // Spare rows below the layout to drag into; they overflow the board so the page doesn't shift.
-  const slotRows = $derived(Math.max(rows, (app.drag?.y ?? 0) + (app.drag?.h ?? 0)) + 3)
+  const ghost    = $derived(app.drag?.mode === 'move' ? app.drag : app.draft)
+  const slotRows = $derived(Math.max(rows, (ghost?.y ?? 0) + (ghost?.h ?? 0)) + 3)
 
   const clamp = (n: number, min: number, max: number) => Math.min(Math.max(n, min), max)
   const label = (tile: Tile) => (tile.kind === 'link' ? linkName(tile.link) || 'Link' : tile.kind === 'group' ? tile.title : kinds[tile.kind].name)
@@ -72,7 +73,7 @@
     })
   })
 
-  const css = $derived(layoutCss(tiles, app.drag, rows, app.keyboard ? ring : null))
+  const css = $derived(layoutCss(tiles, app.drag, ghost, rows, app.keyboard ? ring : null))
 
   // --- Glide on layout changes (FLIP) ------------------------------------------
 
@@ -114,7 +115,7 @@
 
   function cellAt(e: MouseEvent) {
     const rect = grid.getBoundingClientRect()
-    return { col: Math.floor((e.clientX - rect.left) / pitch()), row: Math.floor((e.clientY - rect.top) / pitch()) }
+    return { x: clamp(Math.floor((e.clientX - rect.left) / pitch()), 0, cols - 1), y: Math.max(0, Math.floor((e.clientY - rect.top) / pitch())) }
   }
 
   function boxFor(tile: Tile, mode: Mode, dx: number, dy: number): Box {
@@ -160,6 +161,64 @@
     if (swallowClick) return void (swallowClick = false)
     if (e.detail === 0) return // keyboard activation is handled in onkey
     app.sheet = { kind: 'tile', id: tile.id }
+  }
+
+  // --- Drawing a new tile on empty cells ----------------------------------------
+  // Press on an empty cell and drag to size the tile, then pick what goes in it.
+
+  let anchor: { x: number; y: number } | null = null
+  let ghostEl  = $state<HTMLDivElement>()
+  // Opens above the box when there isn't room below it for the list and the toolbar.
+  const pickUp = $derived(app.draft?.picking && ghostEl ? ghostEl.getBoundingClientRect().bottom + 300 > innerHeight : false)
+  const kindList = Object.entries(kinds) as [Kind, (typeof kinds)[Kind]][]
+  const pickItems: HTMLButtonElement[] = []
+
+  function sketch(e: PointerEvent) {
+    if (!anchor) return
+    const c   = cellAt(e)
+    const box = { x: Math.min(anchor.x, c.x), y: Math.min(anchor.y, c.y), w: Math.abs(c.x - anchor.x) + 1, h: Math.abs(c.y - anchor.y) + 1 }
+    app.draft = { ...box, valid: fits(box, tiles), picking: false }
+  }
+
+  function drawStart(e: PointerEvent) {
+    if (e.button !== 0) return
+    ;(e.currentTarget as Element).setPointerCapture(e.pointerId)
+    anchor = cellAt(e)
+    sketch(e)
+  }
+
+  function drawEnd() {
+    if (!anchor) return
+    anchor = null
+    if (app.draft?.valid) app.draft.picking = true
+    else app.draft = null
+  }
+
+  // A single cell grows to the kind's usual size when there's room; a drawn box is kept as drawn.
+  function create(kind: Kind) {
+    const d = app.draft
+    if (!d) return
+    const [w, h] = kinds[kind].size
+    const grown  = { x: d.x, y: d.y, w: Math.min(w, cols - d.x), h }
+    const box    = d.w * d.h === 1 && fits(grown, tiles) ? grown : { x: d.x, y: d.y, w: d.w, h: d.h }
+    app.draft = null
+    addTile(kind, {}, box)
+  }
+
+  function pickKey(e: KeyboardEvent, i: number) {
+    const n     = Number(e.key)
+    const focus = (j: number) => pickItems[(j + kindList.length) % kindList.length]?.focus()
+    if (n >= 1 && n <= kindList.length) create(kindList[n - 1][0])
+    else if (e.key === 'ArrowDown') focus(i + 1)
+    else if (e.key === 'ArrowUp') focus(i - 1)
+    else if (e.key === 'Escape') app.draft = null
+    else return
+    e.preventDefault()
+    e.stopPropagation()
+  }
+
+  const leavePicker = (e: FocusEvent) => {
+    if (app.draft?.picking && !(e.currentTarget as Element).contains(e.relatedTarget as Node | null)) app.draft = null
   }
 
   // --- Keyboard: Space picks up, arrows move, shift+arrows resize ---------------
@@ -217,8 +276,7 @@
     const url = droppedUrl(e).trim()
     if (dragInside || !isUrl(url)) return
     e.preventDefault()
-    const { col, row } = cellAt(e)
-    const at = { x: clamp(col, 0, cols - 1), y: Math.max(0, row), w: 1, h: 1 }
+    const at = { ...cellAt(e), w: 1, h: 1 }
     addTile('link', { link: newLink('', url) }, fits(at, tiles) ? at : undefined)
   }
 </script>
@@ -231,14 +289,32 @@
 
 <div class="board" bind:this={board} {onfocusin} {onfocusout}>
   {#if app.editing}
-    <div class="grid slots" aria-hidden="true" transition:fade={{ duration: ms(200) }}>
+    <div
+      class="grid slots"
+      aria-hidden="true"
+      transition:fade={{ duration: ms(200) }}
+      onpointerdown={drawStart}
+      onpointermove={sketch}
+      onpointerup={drawEnd}
+      onpointercancel={drawEnd}
+    >
       {#each { length: cols * slotRows }, i (i)}<div class="slot"></div>{/each}
     </div>
   {/if}
 
   <div class="grid" bind:this={grid}>
-    {#if app.drag?.mode === 'move'}
-      <div class="placeholder" class:invalid={!app.drag.valid}></div>
+    {#if ghost}
+      <div class="placeholder" class:invalid={!ghost.valid} bind:this={ghostEl}>
+        {#if app.draft?.picking}
+          <div class="picker" class:up={pickUp} role="menu" aria-label="New tile" tabindex="-1" onfocusout={leavePicker} transition:scale={{ start: 0.96, duration: ms(140) }}>
+            {#each kindList as [kind, { name }], i (kind)}
+              <button role="menuitem" bind:this={pickItems[i]} use:focusOnMount={i === 0} onclick={() => create(kind)} onkeydown={e => pickKey(e, i)}>
+                {name}<kbd>{i + 1}</kbd>
+              </button>
+            {/each}
+          </div>
+        {/if}
+      </div>
     {/if}
 
     {#each tiles as tile (tile.id)}

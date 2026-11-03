@@ -4,6 +4,9 @@ import { defaultConfig, findFree, kinds, newTile, parseConfig, type Box, type Ki
 // A pointer drag: the tile follows the pointer by (px, py) while the box is where it would land.
 export interface Drag extends Box { id: string; mode: 'move' | 'resize'; valid: boolean; px: number; py: number }
 
+// A box being drawn on empty cells; once released, the user picks what goes in it.
+export interface Draft extends Box { valid: boolean; picking: boolean }
+
 export type Sheet = { kind: 'theme' } | { kind: 'tile'; id: string } | null
 
 export const app = $state({
@@ -11,7 +14,8 @@ export const app = $state({
   ready:    false,
   editing:  false,
   sheet:    null as Sheet,
-  menu:     null as 'add' | 'help' | null,
+  menu:     null as 'help' | null,
+  draft:    null as Draft | null,
   palette:  null as string | null,
   drag:     null as Drag | null,
   grab:     null as { id: string; origin: Box } | null,
@@ -34,13 +38,14 @@ export const ease = 'cubic-bezier(.2, .9, .25, 1)'
 // --- Keys --------------------------------------------------------------------
 
 const mac = /Mac|iPhone|iPad/.test(navigator.platform)
-export const keys = { mod: mac ? '⌘' : 'Ctrl', alt: mac ? '⌥' : 'Alt', shift: mac ? '⇧' : 'Shift' }
+export const keys = { mod: mac ? '⌘' : 'Ctrl', shift: mac ? '⇧' : 'Shift' }
 
 // --- Tiles -------------------------------------------------------------------
 
 export function setEditing(on: boolean) {
   app.editing = on
   app.menu    = null
+  app.draft   = null
   if (!on) app.sheet = null
 }
 
@@ -57,6 +62,12 @@ export function addTile(kind: Kind, patch: Partial<Tile> = {}, at?: Box) {
   setEditing(true)
   app.sheet = { kind: 'tile', id: tile.id }
   return tile
+}
+
+// Opens the tile picker on the first free cell, for adding without a pointer.
+export function startDraft() {
+  setEditing(true)
+  app.draft = { ...findFree(1, 1, app.config.theme.cols, app.config.tiles), valid: true, picking: true }
 }
 
 export async function removeTile(id: string) {

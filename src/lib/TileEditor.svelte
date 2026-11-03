@@ -1,12 +1,17 @@
 <script lang="ts">
   import { focusOnMount } from './nav'
-  import { kinds, linkName, newLink, type Link, type Tile, type WeatherTile } from './config'
-  import { closeSheet, removeTile } from './state.svelte'
+  import { kinds, linkName, newLink, type Link, type StyleKey, type Theme, type Tile, type WeatherTile } from './config'
+  import { app, closeSheet, removeTile } from './state.svelte'
   import Icon from './ui/Icon.svelte'
   import LinkFields from './ui/LinkFields.svelte'
   import Segmented from './ui/Segmented.svelte'
+  import StyleFields from './ui/StyleFields.svelte'
 
   let { tile }: { tile: Tile } = $props()
+
+  // Unset style keys follow Appearance; changing one here only affects this tile.
+  const get = <K extends StyleKey>(key: K) => tile.style[key] ?? app.config.theme[key]
+  const set = <K extends StyleKey>(key: K, value: Theme[K]) => (tile.style[key] = value)
 
   interface Place { name: string; admin1?: string; country?: string; latitude: number; longitude: number }
 
@@ -114,7 +119,13 @@
   <p class="hint">Write in the note itself. It saves as you type.</p>
 {/if}
 
-<h3>Tile</h3>
+<h3>Look</h3>
 <label class="check"><input type="checkbox" bind:checked={tile.frame} /> Background</label>
+<StyleFields {get} {set} frame={tile.frame} icons={tile.kind === 'link' || tile.kind === 'group'} iconSize={tile.kind === 'link'} />
+{#if Object.keys(tile.style).length}
+  <button class="button" onclick={() => (tile.style = {})}>Match Appearance settings</button>
+{/if}
+
+<h3>Tile</h3>
 <p class="hint">CSS selector <code>[data-tile="{tile.id}"]</code></p>
 <button class="button danger" onclick={() => removeTile(tile.id)}>Delete tile <kbd>Del</kbd></button>

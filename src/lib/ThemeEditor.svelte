@@ -1,12 +1,16 @@
 <script lang="ts">
-  import { defaultConfig, parseConfig } from './config'
+  import { defaultConfig, parseConfig, type StyleKey, type Theme } from './config'
   import { app, closeSheet } from './state.svelte'
   import ColorInput from './ui/ColorInput.svelte'
   import ImageInput from './ui/ImageInput.svelte'
   import Range from './ui/Range.svelte'
   import Segmented from './ui/Segmented.svelte'
+  import StyleFields from './ui/StyleFields.svelte'
 
   const t = $derived(app.config.theme)
+
+  const get = <K extends StyleKey>(key: K) => t[key]
+  const set = <K extends StyleKey>(key: K, value: Theme[K]) => (t[key] = value)
 
   let importError = $state('')
 
@@ -50,24 +54,9 @@
 {#if t.align === 'top'}<Range label="Space above" min={0} max={400} unit="px" bind:value={t.offset} />{/if}
 
 <h3>Tiles</h3>
-<ColorInput label="Color" bind:value={t.tile} />
-<Range label="Opacity" min={0} max={1} step={0.01} unit="%" bind:value={t.tileOpacity} />
-<Range label="Blur behind" min={0} max={40} unit="px" bind:value={t.blur} />
-<Range label="Corner radius" min={0} max={60} unit="px" bind:value={t.radius} />
-
-<h3>Text</h3>
-<ColorInput label="Text color" bind:value={t.text} />
-<ColorInput label="Highlight color" bind:value={t.accent} />
-<label class="field">
-  <span>Font</span>
-  <input list="fonts" bind:value={t.font} placeholder="Any font installed on this computer" />
-  <datalist id="fonts">
-    <option value="system">System</option>
-    <option value="rounded">Rounded</option>
-    <option value="serif">Serif</option>
-    <option value="mono">Monospace</option>
-  </datalist>
-</label>
+<p class="hint">Every tile starts with these. A tile's own settings can change any of them for that tile.</p>
+<StyleFields {get} {set} />
+<ColorInput label="Keyboard focus color" bind:value={t.accent} />
 
 <h3>Links</h3>
 <Segmented label="Names" options={[['hover', 'On hover'], ['always', 'Always'], ['never', 'Hidden']]} bind:value={t.labels} />
