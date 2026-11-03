@@ -1,10 +1,10 @@
 <script lang="ts">
   import { tick, untrack } from 'svelte'
   import { fade, scale } from 'svelte/transition'
-  import { fits, isUrl, kinds, linkName, newLink, type Box, type Kind, type Tile } from './config'
+  import { board as size, fits, isUrl, kinds, linkName, newLink, type Box, type Kind, type Tile } from './config'
   import { layoutCss, type Ring } from './css'
   import { arrows, firstIn, focusOnMount, isNavTarget, navTarget } from './nav'
-  import { addTile, app, ease, handleEls, keys, ms, removeTile, tileEls } from './state.svelte'
+  import { addTile, app, ease, editTile, handleEls, keys, ms, removeTiles, tileEls } from './state.svelte'
   import Clock from './tiles/Clock.svelte'
   import Weather from './tiles/Weather.svelte'
   import LinkItem from './ui/LinkItem.svelte'
@@ -21,12 +21,8 @@
   let dragInside   = false
 
   const tiles = $derived(app.config.tiles)
-  const cols  = $derived(app.config.theme.cols)
-  const rows  = $derived(Math.max(1, ...tiles.map(t => t.y + t.h)))
-
-  // Spare rows below the layout to drag into; they overflow the board so the page doesn't shift.
-  const ghost    = $derived(app.drag ?? app.draft)
-  const slotRows = $derived(Math.max(rows, (ghost?.y ?? 0) + (ghost?.h ?? 0)) + 3)
+  const { cols, rows } = size
+  const ghost = $derived(app.drag ?? app.draft)
 
   const clamp = (n: number, min: number, max: number) => Math.min(Math.max(n, min), max)
   const label = (tile: Tile) => (tile.kind === 'link' ? linkName(tile.link) || 'Link' : tile.kind === 'group' ? tile.title : kinds[tile.kind].name)
@@ -76,12 +72,12 @@
     })
   })
 
-  const css = $derived(layoutCss(tiles, app.drag, ghost, rows, app.keyboard ? ring : null))
+  const css = $derived(layoutCss(tiles, app.drag, ghost, app.keyboard ? ring : null))
 
   // --- Glide on layout changes (FLIP) ------------------------------------------
 
   const layoutKey = $derived(
-    tiles.map(t => `${t.id}:${t.x},${t.y},${t.w},${t.h}`).join('|') + `|${app.drag?.id ?? ''}|${app.config.theme.cell},${app.config.theme.gap},${cols}`,
+    tiles.map(t => `${t.id}:${t.x},${t.y},${t.w},${t.h}`).join('|') + `|${app.drag?.id ?? ''}`,
   )
 
   let before = new Map<string, DOMRect>()
@@ -111,18 +107,19 @@
 
   // --- Pointer dragging --------------------------------------------------------
 
-  const pitch = () => (grid.getBoundingClientRect().width + app.config.theme.gap) / cols
+  // Cells have no gaps between them (tiles are inset inside their cells), so one cell is width / cols.
+  const pitch = () => grid.getBoundingClientRect().width / cols
 
   function cellAt(e: MouseEvent) {
     const rect = grid.getBoundingClientRect()
-    return { x: clamp(Math.floor((e.clientX - rect.left) / pitch()), 0, cols - 1), y: Math.max(0, Math.floor((e.clientY - rect.top) / pitch())) }
+    return { x: clamp(Math.floor((e.clientX - rect.left) / pitch()), 0, cols - 1), y: clamp(Math.floor((e.clientY - rect.top) / pitch()), 0, rows - 1) }
   }
 
   function boxFor(tile: Tile, mode: Mode, dx: number, dy: number, edge: Edge = 'se'): Box {
-    if (mode === 'move') return { x: clamp(tile.x + dx, 0, cols - tile.w), y: Math.max(0, tile.y + dy), w: tile.w, h: tile.h }
+    if (mode === 'move') return { x: clamp(tile.x + dx, 0, cols - tile.w), y: clamp(tile.y + dy, 0, rows - tile.h), w: tile.w, h: tile.h }
     let { x, y, w, h } = tile
     if (edge.includes('e')) w = clamp(w + dx, 1, cols - x)
-    if (edge.includes('s')) h = Math.max(1, h + dy)
+    if (edge.includes('s')) h = clamp(h + dy, 1, rows - y)
     if (edge.includes('w')) [x, w] = [clamp(x + dx, 0, x + w - 1), x + w - clamp(x + dx, 0, x + w - 1)]
     if (edge.includes('n')) [y, h] = [clamp(y + dy, 0, y + h - 1), y + h - clamp(y + dy, 0, y + h - 1)]
     return { x, y, w, h }
@@ -149,14 +146,13 @@
     const py = e.clientY - y0
     if (!action.moved && Math.hypot(px, py) < 4) return
     action.moved = true
-    const size = pitch()
-    const box  = boxFor(tile, mode, Math.round(px / size), Math.round(py / size), edge)
-    app.drag = { id: tile.id, ...box, mode, valid: fits(box, tiles, tile.id), live: mode === 'move' ? { x: px, y: py, w: 0, h: 0 } : stretch(edge, px, py, w0, h0, size) }
+    const cell = pitch()
+    const box  = boxFor(tile, mode, Math.round(px / cell), Math.round(py / cell), edge)
+    app.drag = { id: tile.id, ...box, mode, valid: fits(box, tiles, tile.id), live: mode === 'move' ? { x: px, y: py, w: 0, h: 0 } : stretch(edge, px, py, w0, h0, cell - (cell * tile.w - w0)) }
   }
 
   // Resizing in pixels: the dragged edges follow the pointer, never smaller than one cell.
-  function stretch(edge: Edge, px: number, py: number, w0: number, h0: number, size: number) {
-    const min = size - app.config.theme.gap
+  function stretch(edge: Edge, px: number, py: number, w0: number, h0: number, min: number) {
     const w   = edge.includes('e') ? w0 + px : edge.includes('w') ? w0 - px : w0
     const h   = edge.includes('s') ? h0 + py : edge.includes('n') ? h0 - py : h0
     const live = { x: 0, y: 0, w: Math.max(min, w), h: Math.max(min, h) }
@@ -173,10 +169,16 @@
     app.drag = null
   }
 
+  // Click selects one tile; Shift or ⌘/Ctrl click adds or removes it from the selection.
+  function toggle(id: string) {
+    app.selected = app.selected.includes(id) ? app.selected.filter(s => s !== id) : [...app.selected, id]
+  }
+
   function select(e: MouseEvent, tile: Tile) {
     if (swallowClick) return void (swallowClick = false)
     if (e.detail === 0) return // keyboard activation is handled in onkey
-    app.sheet = { kind: 'tile', id: tile.id }
+    if (e.shiftKey || e.metaKey || e.ctrlKey) toggle(tile.id)
+    else app.selected = [tile.id]
   }
 
   // --- Drawing a new tile on empty cells ----------------------------------------
@@ -199,6 +201,7 @@
   function drawStart(e: PointerEvent) {
     if (e.button !== 0) return
     ;(e.currentTarget as Element).setPointerCapture(e.pointerId)
+    app.selected = []
     anchor = cellAt(e)
     sketch(e)
   }
@@ -215,7 +218,7 @@
     const d = app.draft
     if (!d) return
     const [w, h] = kinds[kind].size
-    const grown  = { x: d.x, y: d.y, w: Math.min(w, cols - d.x), h }
+    const grown  = { x: d.x, y: d.y, w: Math.min(w, cols - d.x), h: Math.min(h, rows - d.y) }
     const box    = d.w * d.h === 1 && fits(grown, tiles) ? grown : { x: d.x, y: d.y, w: d.w, h: d.h }
     app.draft = null
     addTile(kind, {}, box)
@@ -246,8 +249,10 @@
     if (e.key === ' ' || (e.key === 'Enter' && grabbed)) {
       app.grab     = grabbed ? null : { id: tile.id, origin: { x: tile.x, y: tile.y, w: tile.w, h: tile.h } }
       app.announce = grabbed ? `Dropped ${label(tile)}.` : `Picked up ${label(tile)}. Arrow keys move it, ${keys.shift} and arrow keys resize it, Space drops it.`
+    } else if (e.key === 'Enter' && e.shiftKey) {
+      toggle(tile.id)
     } else if (e.key === 'Enter') {
-      app.sheet = { kind: 'tile', id: tile.id }
+      editTile(tile.id)
     } else if (e.key === 'Escape' && grabbed && app.grab) {
       Object.assign(tile, app.grab.origin)
       app.grab     = null
@@ -265,8 +270,9 @@
       }
       if (!moved) app.announce = mode === 'move' ? 'No free space that way.' : 'That space is taken.'
     } else if ((e.key === 'Delete' || e.key === 'Backspace') && !grabbed) {
-      removeTile(tile.id)
-      app.announce = `Deleted ${label(tile)}. ${keys.mod} Z brings it back.`
+      const ids = app.selected.includes(tile.id) ? app.selected : [tile.id]
+      removeTiles(ids)
+      app.announce = `Deleted ${ids.length > 1 ? `${ids.length} tiles` : label(tile)}. ${keys.mod} Z brings it back.`
     } else return
 
     e.preventDefault()
@@ -301,7 +307,7 @@
   <svelte:element this={'style'}>{css}</svelte:element>
 </svelte:head>
 
-<svelte:window {ondragover} {ondrop} ondragstart={() => (dragInside = true)} ondragend={() => (dragInside = false)} />
+<svelte:window {ondragover} {ondrop} onresize={() => focused?.isConnected && (ring = measure(focused))} ondragstart={() => (dragInside = true)} ondragend={() => (dragInside = false)} />
 
 <div class="board" bind:this={board} {onfocusin} {onfocusout}>
   {#if app.editing}
@@ -314,7 +320,7 @@
       onpointerup={drawEnd}
       onpointercancel={drawEnd}
     >
-      {#each { length: cols * slotRows }, i (i)}<div class="slot"></div>{/each}
+      {#each { length: cols * rows }, i (i)}<div class="slot"></div>{/each}
     </div>
   {/if}
 
@@ -336,10 +342,9 @@
     {#each tiles as tile (tile.id)}
       <div
         class="tile"
-        class:frame={tile.frame}
         class:lifted={lifted(tile)}
         class:resizing={app.drag?.id === tile.id && app.drag.mode === 'resize'}
-        class:selected={app.sheet?.kind === 'tile' && app.sheet.id === tile.id}
+        class:selected={app.selected.includes(tile.id)}
         class:invalid={app.drag?.id === tile.id && !app.drag.valid}
         data-tile={tile.id}
         data-kind={tile.kind}
@@ -388,6 +393,9 @@
             {#each edges as edge (edge)}
               <span class="resize {edge}" aria-hidden="true" onpointerdown={e => start(e, tile, 'resize', edge)}></span>
             {/each}
+          </button>
+          <button class="remove" tabindex="-1" aria-label="Delete {label(tile)}" onclick={() => removeTiles([tile.id])}>
+            <svg viewBox="0 0 10 10" aria-hidden="true"><path d="M2 2l6 6M8 2l-6 6" /></svg>
           </button>
         {/if}
       </div>

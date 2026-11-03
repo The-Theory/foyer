@@ -8,13 +8,13 @@ export interface Drag extends Box { id: string; mode: 'move' | 'resize'; valid: 
 // A box being drawn on empty cells; once released, the user picks what goes in it.
 export interface Draft extends Box { valid: boolean; picking: boolean }
 
-export type Sheet = { kind: 'theme' } | { kind: 'tile'; id: string } | null
-
 export const app = $state({
   config:   defaultConfig(),
   ready:    false,
   editing:  false,
-  sheet:    null as Sheet,
+  // While editing, the panel edits the selected tiles, or the whole page when none are selected.
+  selected:   [] as string[],
+  focusPanel: false,
   menu:     null as 'help' | null,
   draft:    null as Draft | null,
   palette:  null as string | null,
@@ -47,37 +47,46 @@ export function setEditing(on: boolean) {
   app.editing = on
   app.menu    = null
   app.draft   = null
-  if (!on) app.sheet = null
+  if (!on) app.selected = []
 }
 
-export function openAppearance() {
+export function openPage() {
   setEditing(true)
-  app.sheet = { kind: 'theme' }
+  app.selected = []
+}
+
+const full = () => (app.announce = 'No room left on the board. Make a tile smaller or delete one.')
+
+// Selects the tile and moves keyboard focus into its settings.
+export function editTile(id: string) {
+  setEditing(true)
+  app.selected   = [id]
+  app.focusPanel = true
 }
 
 export function addTile(kind: Kind, patch: Partial<Tile> = {}, at?: Box) {
   const [w, h] = kinds[kind].size
-  const box  = at ?? findFree(w, h, app.config.theme.cols, app.config.tiles)
+  const box = at ?? findFree(w, h, app.config.tiles)
+  if (!box) return full()
   const tile = { ...newTile(kind, box), ...patch } as Tile
   app.config.tiles.push(tile)
-  setEditing(true)
-  app.sheet = { kind: 'tile', id: tile.id }
-  return tile
+  editTile(tile.id)
 }
 
 // Opens the tile picker on the first free cell, for adding without a pointer.
 export function startDraft() {
   setEditing(true)
-  app.draft = { ...findFree(1, 1, app.config.theme.cols, app.config.tiles), valid: true, picking: true }
+  const box = findFree(1, 1, app.config.tiles)
+  if (box) app.draft = { ...box, valid: true, picking: true }
+  else full()
 }
 
-export async function removeTile(id: string) {
-  const el = tileEls[id]
-  if (app.sheet?.kind === 'tile' && app.sheet.id === id) app.sheet = null
-  const fade = el?.animate([{ opacity: 1, scale: 1 }, { opacity: 0, scale: 0.92 }], { duration: ms(160), easing: ease, fill: 'forwards' })
+export async function removeTiles(ids: string[]) {
+  app.selected = app.selected.filter(id => !ids.includes(id))
+  const fades = ids.map(id => tileEls[id]?.animate([{ opacity: 1, scale: 1 }, { opacity: 0, scale: 0.92 }], { duration: ms(160), easing: ease, fill: 'forwards' }).finished)
   // Background tabs may never finish the animation, so don't wait on it alone.
-  await Promise.race([fade?.finished, new Promise(done => setTimeout(done, ms(160) + 40))])
-  app.config.tiles = app.config.tiles.filter(t => t.id !== id)
+  await Promise.race([Promise.all(fades), new Promise(done => setTimeout(done, ms(160) + 40))])
+  app.config.tiles = app.config.tiles.filter(t => !ids.includes(t.id))
 }
 
 export async function focusTile(id: string) {
@@ -85,10 +94,11 @@ export async function focusTile(id: string) {
   handleEls[id]?.focus()
 }
 
-export function closeSheet() {
-  const sheet = app.sheet
-  app.sheet = null
-  if (sheet?.kind === 'tile') focusTile(sheet.id)
+// Clears the selection; the panel goes back to the page and focus back to the board.
+export function deselect() {
+  const first = app.selected[0]
+  app.selected = []
+  if (first) focusTile(first)
 }
 
 // --- Persistence -------------------------------------------------------------
@@ -141,7 +151,7 @@ function travel(from: string[], to: string[], done: string) {
   adopt(json)
   write(key, saved)
   lastStep     = 0
-  app.sheet    = null
+  app.selected = app.selected.filter(findTile)
   app.announce = done
 }
 

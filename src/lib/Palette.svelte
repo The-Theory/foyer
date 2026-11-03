@@ -1,7 +1,7 @@
 <script lang="ts">
   import { scale } from 'svelte/transition'
   import { hostOf, kinds, linkName, safeUrl, type Kind, type Link } from './config'
-  import { addTile, app, keys, ms, openAppearance, setEditing } from './state.svelte'
+  import { addTile, app, keys, ms, openPage, setEditing } from './state.svelte'
   import { focusOnMount } from './nav'
   import Icon from './ui/Icon.svelte'
 
@@ -15,7 +15,7 @@
 
   const commands: Result[] = [
     { type: 'command', id: 'edit', name: 'Edit layout', hint: `${keys.mod} E`, run: () => setEditing(true) },
-    { type: 'command', id: 'appearance', name: 'Change appearance', run: openAppearance },
+    { type: 'command', id: 'appearance', name: 'Change the look', run: openPage },
     ...Object.entries(kinds).map(([kind, { name }]): Result => ({
       type: 'command', id: `add-${kind}`, name: `Add ${name.toLowerCase()} tile`, run: () => addTile(kind as Kind),
     })),

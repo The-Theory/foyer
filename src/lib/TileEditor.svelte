@@ -1,17 +1,30 @@
 <script lang="ts">
+  import { onMount, untrack } from 'svelte'
   import { focusOnMount } from './nav'
-  import { kinds, linkName, newLink, type Link, type StyleKey, type Theme, type Tile, type WeatherTile } from './config'
-  import { app, closeSheet, removeTile } from './state.svelte'
+  import { kinds, linkName, newLink, type Link, type Look, type LookKey, type Tile, type WeatherTile } from './config'
+  import { app, deselect, removeTiles } from './state.svelte'
   import Icon from './ui/Icon.svelte'
   import LinkFields from './ui/LinkFields.svelte'
   import Segmented from './ui/Segmented.svelte'
-  import StyleFields from './ui/StyleFields.svelte'
+  import LookFields from './ui/LookFields.svelte'
 
-  let { tile }: { tile: Tile } = $props()
+  // Edits the selected tiles: a single tile gets its own settings too; several share the look.
+  let { tiles }: { tiles: Tile[] } = $props()
 
-  // Unset style keys follow Appearance; changing one here only affects this tile.
-  const get = <K extends StyleKey>(key: K) => tile.style[key] ?? app.config.theme[key]
-  const set = <K extends StyleKey>(key: K, value: Theme[K]) => (tile.style[key] = value)
+  const tile  = $derived(tiles.length === 1 ? tiles[0] : undefined)
+  const label = $derived(tile ? (tile.kind === 'link' ? linkName(tile.link) || 'Link' : tile.kind === 'group' ? tile.title || 'Group' : kinds[tile.kind].name) : `${tiles.length} tiles`)
+
+  // Keyboard users who pressed Enter (or just added the tile) land in the first field; clicks don't steal focus.
+  const focus = untrack(() => app.focusPanel)
+  onMount(() => (app.focusPanel = false))
+
+  // A key the tile hasn't changed follows the page. With several tiles, a value they don't share shows as unset.
+  const get = <K extends LookKey>(key: K) => {
+    const values = new Set(tiles.map(t => t.style[key] ?? app.config.theme[key]))
+    return values.size === 1 ? [...values][0] : undefined
+  }
+  const set = <K extends LookKey>(key: K, value: Look[K]) => tiles.forEach(t => (t.style[key] = value))
+  const changed = $derived(tiles.some(t => Object.keys(t.style).length))
 
   interface Place { name: string; admin1?: string; country?: string; latitude: number; longitude: number }
 
@@ -54,18 +67,26 @@
 </script>
 
 <header>
-  <h2>{kinds[tile.kind].name}</h2>
-  <button class="button ghost" onclick={closeSheet}>Close <kbd>Esc</kbd></button>
+  <div class="title">
+    <h2>{label}</h2>
+    <button class="button ghost" onclick={deselect}>Page settings <kbd>Esc</kbd></button>
+  </div>
+  {#if !tile}<p>Changes below apply to all {tiles.length}. Shift-click a tile to add or remove it.</p>{/if}
 </header>
 
-{#if tile.kind === 'link'}
-  <LinkFields link={tile.link} autofocus />
+{#if !tile}
+  <!-- several tiles: only the shared look -->
+{:else if tile.kind === 'link'}
+  <section><LinkFields link={tile.link} autofocus={focus} /></section>
 
 {:else if tile.kind === 'group'}
-  <label class="field"><span>Name</span><input bind:value={tile.title} use:focusOnMount /></label>
+  <section>
+  <label class="field"><span>Name</span><input bind:value={tile.title} use:focusOnMount={focus} /></label>
   <label class="check"><input type="checkbox" bind:checked={tile.showTitle} /> Show name</label>
-  <Segmented label="Layout" options={[['grid', 'Icons'], ['list', 'List']]} bind:value={tile.layout} />
+  <Segmented label="Show links as" options={[['grid', 'Icons'], ['list', 'A list']]} bind:value={tile.layout} />
+  </section>
 
+  <section>
   <h3>Links</h3>
   {#if tile.links.length}
     <ul class="links">
@@ -85,17 +106,21 @@
     </ul>
   {/if}
   <button class="button" onclick={() => addLink(tile.links)}>Add link</button>
+  </section>
 
 {:else if tile.kind === 'clock'}
-  <label class="check"><input type="checkbox" bind:checked={tile.hour12} use:focusOnMount /> 12-hour time</label>
-  <label class="check"><input type="checkbox" bind:checked={tile.seconds} /> Seconds</label>
-  <label class="check"><input type="checkbox" bind:checked={tile.date} /> Date</label>
+  <section>
+  <label class="check"><input type="checkbox" bind:checked={tile.hour12} use:focusOnMount={focus} /> 12-hour time</label>
+  <label class="check"><input type="checkbox" bind:checked={tile.seconds} /> Show seconds</label>
+  <label class="check"><input type="checkbox" bind:checked={tile.date} /> Show the date</label>
+  </section>
 
 {:else if tile.kind === 'weather'}
+  <section>
   <form class="field" onsubmit={e => { e.preventDefault(); search() }}>
     <span>City</span>
     <div class="row">
-      <input bind:value={query} placeholder={tile.place || 'Search for a city'} use:focusOnMount />
+      <input bind:value={query} placeholder={tile.place || 'Search for a city'} use:focusOnMount={focus} />
       <button class="button" disabled={!query.trim()}>Search</button>
     </div>
   </form>
@@ -114,18 +139,22 @@
     options={[['c', '°C'], ['f', '°F']]}
     bind:value={() => (tile.fahrenheit ? 'f' : 'c'), unit => (tile.fahrenheit = unit === 'f')}
   />
+  </section>
 
 {:else}
-  <p class="hint">Write in the note itself. It saves as you type.</p>
+  <section><p>Type straight into the note on the page. It saves as you go.</p></section>
 {/if}
 
-<h3>Look</h3>
-<label class="check"><input type="checkbox" bind:checked={tile.frame} /> Background</label>
-<StyleFields {get} {set} frame={tile.frame} icons={tile.kind === 'link' || tile.kind === 'group'} iconSize={tile.kind === 'link'} />
-{#if Object.keys(tile.style).length}
-  <button class="button" onclick={() => (tile.style = {})}>Match Appearance settings</button>
-{/if}
+<section>
+  <h3>Look</h3>
+  <p>{tile ? 'Only this tile. Anything you leave alone keeps following the page.' : 'Only these tiles. Anything you leave alone keeps following the page.'}</p>
+  <LookFields {get} {set} icons={tiles.some(t => t.kind === 'link' || t.kind === 'group')} />
+  {#if changed}
+    <button class="button" onclick={() => tiles.forEach(t => (t.style = {}))}>Go back to the page look</button>
+  {/if}
+</section>
 
-<h3>Tile</h3>
-<p class="hint">CSS selector <code>[data-tile="{tile.id}"]</code></p>
-<button class="button danger" onclick={() => removeTile(tile.id)}>Delete tile <kbd>Del</kbd></button>
+<section>
+  {#if tile}<p>To style this tile with custom CSS, use <code>[data-tile="{tile.id}"]</code></p>{/if}
+  <button class="button danger" onclick={() => removeTiles(tiles.map(t => t.id))}>{tile ? 'Delete tile' : `Delete ${tiles.length} tiles`} <kbd>Del</kbd></button>
+</section>

@@ -5,7 +5,7 @@
   import Grid from './lib/Grid.svelte'
   import { arrows, focusOnMount, step } from './lib/nav'
   import Palette from './lib/Palette.svelte'
-  import { addTile, app, closeSheet, findTile, flush, keys, load, ms, openAppearance, persist, redo, setEditing, startDraft, undo } from './lib/state.svelte'
+  import { addTile, app, deselect, findTile, flush, keys, load, ms, openPage, persist, redo, setEditing, startDraft, undo } from './lib/state.svelte'
   import ThemeEditor from './lib/ThemeEditor.svelte'
   import TileEditor from './lib/TileEditor.svelte'
 
@@ -14,7 +14,7 @@
 
   const theme = $derived(app.config.theme)
   const css   = $derived(themeCss(app.config))
-  const tile  = $derived(app.sheet?.kind === 'tile' ? findTile(app.sheet.id) : undefined)
+  const selected = $derived(app.selected.map(findTile).filter(t => t !== undefined))
   const slide = { x: 24, duration: ms(220), easing: (t: number) => 1 - (1 - t) ** 3 }
   const rise  = { y: 12, duration: ms(200), easing: (t: number) => 1 - (1 - t) ** 3 }
 
@@ -28,16 +28,18 @@
       ['?', 'Show this list'],
     ]],
     ['While editing', [
-      ['Click or drag', 'Add a tile on empty space'],
+      ['Click or drag', 'Add a tile on empty squares'],
+      ['Click a tile', 'Select it; Shift-click selects several'],
       ['Arrow keys', 'Move between tiles'],
       ['Space', 'Pick up or drop the focused tile'],
       [`Arrows, ${keys.shift} arrows`, 'Move or resize a picked-up tile'],
-      ['Enter', 'Tile settings'],
-      ['Delete', 'Delete the focused tile'],
-      ['A', 'Add a tile in the next free space'],
-      [',', 'Appearance'],
+      ['Enter', 'Select the tile and jump to its settings'],
+      [`${keys.shift} Enter`, 'Add it to the selection'],
+      ['Delete', 'Delete the focused or selected tiles'],
+      ['A', 'Add a tile in the next free square'],
+      [',', 'Page settings'],
       [`${keys.mod} Z, ${keys.shift} ${keys.mod} Z`, 'Undo, redo'],
-      [`Esc or ${keys.mod} E`, 'Close the panel, then stop editing'],
+      ['Esc', 'Clear the selection, then stop editing'],
     ]],
   ]
 
@@ -69,7 +71,7 @@
       if (typing(e.target) && !inSheet) return (e.target as HTMLElement).blur()
       if (app.menu) app.menu = null
       else if (app.draft) app.draft = null
-      else if (app.sheet) closeSheet()
+      else if (app.selected.length) deselect()
       else setEditing(!app.editing)
       return
     }
@@ -85,7 +87,7 @@
     const key = e.key.toLowerCase()
     if (key === '?') app.menu = 'help'
     else if (app.editing && key === 'a') startDraft()
-    else if (app.editing && key === ',') openAppearance()
+    else if (app.editing && key === ',') openPage()
     else if (!app.editing && e.key.length === 1 && e.key.trim()) app.palette = e.key
     else return
     e.preventDefault()
@@ -109,9 +111,8 @@
 
 {#if app.ready}
   <main
-    class="page labels-{theme.labels} align-{theme.align}"
+    class="page labels-{theme.labels}"
     class:editing={app.editing}
-    class:sheet-open={app.editing && app.sheet}
     onpointerdown={press}
     onpointerup={release}
     onpointerleave={release}
@@ -131,19 +132,16 @@
   {#if app.editing}
     <nav class="toolbar" aria-label="Editing" transition:fly={rise}>
       <span class="tip">Click or drag on empty space to add a tile</span>
-      <button class="button" aria-pressed={app.sheet?.kind === 'theme'} onclick={() => (app.sheet?.kind === 'theme' ? closeSheet() : openAppearance())}>
-        Appearance <kbd>,</kbd>
-      </button>
       <button class="button" onclick={undo}>Undo <kbd>{keys.mod} Z</kbd></button>
       <span class="divider"></span>
       <button class="button primary" onclick={() => setEditing(false)}>Done <kbd>Esc</kbd></button>
     </nav>
 
-    {#if app.sheet}
-      <aside class="sheet" aria-label="Settings" transition:fly={slide}>
-        {#if tile}{#key tile.id}<TileEditor {tile} />{/key}{:else if app.sheet.kind === 'theme'}<ThemeEditor />{/if}
-      </aside>
-    {/if}
+    <aside class="sheet" aria-label="Settings" transition:fly={slide}>
+      {#key app.selected.join()}
+        {#if selected.length}<TileEditor tiles={selected} />{:else}<ThemeEditor />{/if}
+      {/key}
+    </aside>
   {:else if theme.editCorner || !app.config.tiles.length}
     <div class="corner">
       <button class="button" onclick={() => setEditing(true)}>Edit <kbd>{keys.mod} E</kbd></button>
