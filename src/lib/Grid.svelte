@@ -14,7 +14,7 @@
   const edges = ['n', 's', 'e', 'w', 'ne', 'nw', 'se', 'sw'] as const
   type Edge = (typeof edges)[number]
 
-  let board: HTMLDivElement
+  let board!: HTMLDivElement
   let grid: HTMLDivElement
   let action: { tile: Tile; mode: Mode; edge: Edge; x0: number; y0: number; w0: number; h0: number; moved: boolean } | null = null
   let swallowClick = false
@@ -197,8 +197,11 @@
 
   let anchor: { x: number; y: number } | null = null
   let ghostEl  = $state<HTMLDivElement>()
-  // Opens above the box when there isn't room below it for the list and the toolbar.
-  const pickUp = $derived(app.draft?.picking && ghostEl ? ghostEl.getBoundingClientRect().bottom + 300 > innerHeight : false)
+  // Opens above the box when there isn't room below it for the list and the toolbar, and toward
+  // the left when it would run past the board's right edge, where the settings panel starts.
+  const pickRect = $derived(app.draft?.picking && ghostEl ? ghostEl.getBoundingClientRect() : null)
+  const pickUp   = $derived(pickRect ? pickRect.bottom + 300 > innerHeight : false)
+  const pickLeft = $derived(pickRect ? pickRect.left + 180 > board.getBoundingClientRect().right : false)
   const kindList = Object.entries(kinds) as [Kind, (typeof kinds)[Kind]][]
   const pickItems: HTMLButtonElement[] = []
 
@@ -339,7 +342,7 @@
     {#if ghost}
       <div class="placeholder" class:invalid={!ghost.valid} bind:this={ghostEl}>
         {#if app.draft?.picking}
-          <div class="picker" class:up={pickUp} role="menu" aria-label="New tile" tabindex="-1" onfocusout={leavePicker} transition:scale={{ start: 0.96, duration: ms(140) }}>
+          <div class="picker" class:up={pickUp} class:left={pickLeft} role="menu" aria-label="New tile" tabindex="-1" onfocusout={leavePicker} transition:scale={{ start: 0.96, duration: ms(140) }}>
             {#each kindList as [kind, { name }], i (kind)}
               <button role="menuitem" bind:this={pickItems[i]} use:focusOnMount={i === 0} onclick={() => create(kind)} onkeydown={e => pickKey(e, i)}>
                 {name}<kbd>{i + 1}</kbd>

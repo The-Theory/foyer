@@ -390,6 +390,8 @@ kbd {
   transform-origin: top left;
 }
 .picker.up { top: auto; bottom: calc(100% + 8px); transform-origin: bottom left; }
+.picker.left { left: auto; right: 0; transform-origin: top right; }
+.picker.up.left { transform-origin: bottom right; }
 .picker button {
   display: flex;
   align-items: center;
