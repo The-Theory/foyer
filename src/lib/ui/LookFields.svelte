@@ -27,7 +27,7 @@
 
 <Segmented label="Background" options={[['none', 'None'], ['glass', 'Frosted'], ['solid', 'Solid']]} bind:value={() => get('fill'), v => v && set('fill', v)} preview={fillPreview} />
 {#if get('fill') !== 'none'}
-  <Swatches label="Background color" colors={palettes.ink} bind:value={() => get('fillColor'), v => v && set('fillColor', v)} />
+  <Swatches label="Color" colors={palettes.ink} bind:value={() => get('fillColor'), v => v && set('fillColor', v)} />
 {/if}
 <Segmented label="Corners" options={[['square', 'Square'], ['soft', 'Rounded'], ['round', 'Round']]} bind:value={() => get('corners'), v => v && set('corners', v)} preview={cornerPreview} />
 <Swatches label="Text color" colors={palettes.ink} bind:value={() => get('text'), v => v && set('text', v)} />
@@ -38,8 +38,8 @@
   preview={fontPreview}
 />
 <label class="field">
-  <span>Or any font on this computer</span>
-  <input value={presetFont ? '' : (font ?? '')} placeholder="For example Helvetica Neue" onchange={e => e.currentTarget.value.trim() && set('font', e.currentTarget.value.trim())} />
+  <span>Custom font</span>
+  <input value={presetFont ? '' : (font ?? '')} placeholder="Helvetica Neue" onchange={e => e.currentTarget.value.trim() && set('font', e.currentTarget.value.trim())} />
 </label>
 {#if icons}
   <Segmented label="Icon size" options={[['s', 'Small'], ['m', 'Medium'], ['l', 'Large']]} bind:value={() => get('iconSize'), v => v && set('iconSize', v)} preview={sizePreview} />

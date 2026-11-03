@@ -69,9 +69,8 @@
 <header>
   <div class="title">
     <h2>{label}</h2>
-    <button class="button ghost" onclick={deselect}>Page settings <kbd>Esc</kbd></button>
+    <button class="button ghost" onclick={deselect}>Page <kbd>Esc</kbd></button>
   </div>
-  {#if !tile}<p>Changes below apply to all {tiles.length}. Shift-click a tile to add or remove it.</p>{/if}
 </header>
 
 {#if !tile}
@@ -83,7 +82,7 @@
   <section>
   <label class="field"><span>Name</span><input bind:value={tile.title} use:focusOnMount={focus} /></label>
   <label class="check"><input type="checkbox" bind:checked={tile.showTitle} /> Show name</label>
-  <Segmented label="Show links as" options={[['grid', 'Icons'], ['list', 'A list']]} bind:value={tile.layout} />
+  <Segmented label="Layout" options={[['grid', 'Icons'], ['list', 'List']]} bind:value={tile.layout} />
   </section>
 
   <section>
@@ -111,8 +110,8 @@
 {:else if tile.kind === 'clock'}
   <section>
   <label class="check"><input type="checkbox" bind:checked={tile.hour12} use:focusOnMount={focus} /> 12-hour time</label>
-  <label class="check"><input type="checkbox" bind:checked={tile.seconds} /> Show seconds</label>
-  <label class="check"><input type="checkbox" bind:checked={tile.date} /> Show the date</label>
+  <label class="check"><input type="checkbox" bind:checked={tile.seconds} /> Seconds</label>
+  <label class="check"><input type="checkbox" bind:checked={tile.date} /> Date</label>
   </section>
 
 {:else if tile.kind === 'weather'}
@@ -124,7 +123,7 @@
       <button class="button" disabled={!query.trim()}>Search</button>
     </div>
   </form>
-  {#if failed}<p class="error">City search didn't respond. Check your connection and try again.</p>{/if}
+  {#if failed}<p class="error">Search failed. Check your connection.</p>{/if}
   {#if places}
     <ul class="places">
       {#each places as p (`${p.latitude},${p.longitude}`)}
@@ -140,21 +139,17 @@
     bind:value={() => (tile.fahrenheit ? 'f' : 'c'), unit => (tile.fahrenheit = unit === 'f')}
   />
   </section>
-
-{:else}
-  <section><p>Type straight into the note on the page. It saves as you go.</p></section>
 {/if}
 
 <section>
   <h3>Look</h3>
-  <p>{tile ? 'Only this tile. Anything you leave alone keeps following the page.' : 'Only these tiles. Anything you leave alone keeps following the page.'}</p>
   <LookFields {get} {set} icons={tiles.some(t => t.kind === 'link' || t.kind === 'group')} />
   {#if changed}
-    <button class="button" onclick={() => tiles.forEach(t => (t.style = {}))}>Go back to the page look</button>
+    <button class="button" onclick={() => tiles.forEach(t => (t.style = {}))}>Reset to page look</button>
   {/if}
 </section>
 
 <section>
-  {#if tile}<p>To style this tile with custom CSS, use <code>[data-tile="{tile.id}"]</code></p>{/if}
+  {#if tile}<p>CSS <code>[data-tile="{tile.id}"]</code></p>{/if}
   <button class="button danger" onclick={() => removeTiles(tiles.map(t => t.id))}>{tile ? 'Delete tile' : `Delete ${tiles.length} tiles`} <kbd>Del</kbd></button>
 </section>

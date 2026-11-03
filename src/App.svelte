@@ -5,7 +5,7 @@
   import Grid from './lib/Grid.svelte'
   import { arrows, focusOnMount, step } from './lib/nav'
   import Palette from './lib/Palette.svelte'
-  import { addTile, app, deselect, findTile, flush, keys, load, ms, openPage, persist, redo, setEditing, startDraft, undo } from './lib/state.svelte'
+  import { addTile, app, centerLayout, deselect, findTile, flush, keys, load, ms, openPage, persist, redo, setEditing, startDraft, undo } from './lib/state.svelte'
   import ThemeEditor from './lib/ThemeEditor.svelte'
   import TileEditor from './lib/TileEditor.svelte'
 
@@ -121,7 +121,7 @@
     <Grid />
 
     {#if !app.config.tiles.length && !app.editing}
-      <p class="empty">No tiles yet. Press <kbd>Esc</kbd> and click anywhere to add one, or paste an address.</p>
+      <p class="empty">Press <kbd>Esc</kbd> to add tiles</p>
     {/if}
 
     {#if app.palette}
@@ -131,7 +131,7 @@
 
   {#if app.editing}
     <nav class="toolbar" aria-label="Editing" transition:fly={rise}>
-      <span class="tip">Click or drag on empty space to add a tile</span>
+      <button class="button" onclick={centerLayout}>Center</button>
       <button class="button" onclick={undo}>Undo <kbd>{keys.mod} Z</kbd></button>
       <span class="divider"></span>
       <button class="button primary" onclick={() => setEditing(false)}>Done <kbd>Esc</kbd></button>

@@ -113,20 +113,25 @@ export function findFree(w: number, h: number, tiles: Tile[], g: Grid): Box | nu
   return null
 }
 
-// Fits tiles onto a grid: the layout is re-centered if it fits as a whole; tiles that still
-// don't fit (or overlap) move to free squares rather than vanish.
-export function settle(tiles: Tile[], g: Grid): Tile[] {
+// The whole layout moved as one so it sits in the middle of the grid (on any axis it fits).
+export function center(tiles: Tile[], g: Grid): Tile[] {
   if (!tiles.length) return tiles
   const left   = Math.min(...tiles.map(t => t.x))
   const top    = Math.min(...tiles.map(t => t.y))
   const width  = Math.max(...tiles.map(t => t.x + t.w)) - left
   const height = Math.max(...tiles.map(t => t.y + t.h)) - top
-  const dx = width <= g.cols && !tiles.every(t => inGrid(t, g)) ? Math.floor((g.cols - width) / 2) - left : 0
-  const dy = height <= g.rows && !tiles.every(t => inGrid(t, g)) ? Math.floor((g.rows - height) / 2) - top : 0
+  const dx = width <= g.cols ? Math.floor((g.cols - width) / 2) - left : 0
+  const dy = height <= g.rows ? Math.floor((g.rows - height) / 2) - top : 0
+  return tiles.map(t => ({ ...t, x: t.x + dx, y: t.y + dy }))
+}
 
+// Fits tiles onto a grid: the layout is re-centered if it no longer fits where it was; tiles that
+// still don't fit (or overlap) move to free squares rather than vanish.
+export function settle(tiles: Tile[], g: Grid): Tile[] {
+  const shifted = tiles.every(t => inGrid(t, g)) ? tiles : center(tiles, g)
   const placed: Tile[] = []
-  for (const tile of tiles) {
-    const moved = { ...tile, x: tile.x + dx, y: tile.y + dy }
+  for (const [i, tile] of tiles.entries()) {
+    const moved = shifted[i]
     const spot  = inGrid(moved, g) && fits(moved, placed) ? moved : findFree(tile.w, tile.h, placed, g)
     if (spot) placed.push({ ...tile, ...spot })
     else console.warn('Foyer: no room left on the board for a tile', tile)

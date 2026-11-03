@@ -361,14 +361,10 @@ kbd {
 @media (min-width: 900px) {
   .toolbar { left: calc(50% - 216px); }
 }
-@media (max-width: 1200px) {
-  .tip { display: none; }
-}
 .toolbar > .button:not(.primary) { background: transparent; }
 .toolbar > .button:not(.primary):hover { background: var(--ui-2); }
 .divider { align-self: stretch; width: 1px; margin: 4px; background: var(--ui-line); }
 
-.tip { padding: 0 10px; font-size: 13px; color: var(--ui-muted); white-space: nowrap; }
 
 /* Picks what goes in a newly drawn box. */
 .picker {
@@ -436,21 +432,12 @@ kbd {
 .sheet section, .sheet .section { display: flex; flex-direction: column; gap: 18px; padding: 22px 0; }
 .sheet section + section, .sheet section + .section, .sheet .section + section { border-top: 1px solid var(--ui-line); }
 .sheet h3 { margin: 0; font-size: 15px; font-weight: 650; }
-.sheet h4 { margin: 8px 0 -6px; font-size: 13.5px; font-weight: 600; }
-.sheet details.section { display: block; }
-.sheet .stack { display: flex; flex-direction: column; gap: 16px; padding-top: 16px; }
 .sheet textarea.code { width: 100%; }
 .sheet .error { color: var(--ui-danger); }
 .sheet code { font-family: ui-monospace, Menlo, monospace; font-size: .9em; padding: 1px 5px; border-radius: 5px; background: var(--ui-2); color: var(--ui-text); user-select: all; }
 
-.sheet details > summary { list-style: none; display: flex; align-items: center; justify-content: space-between; cursor: pointer; }
-.sheet details > summary::-webkit-details-marker { display: none; }
-.sheet details > summary::after { content: 'Show'; font-size: 13px; color: var(--ui-muted); }
-.sheet details[open] > summary::after { content: 'Hide'; }
-
-.reference { display: grid; grid-template-columns: max-content 1fr; gap: 8px 14px; margin: 0; font-size: 13.5px; align-items: baseline; }
-.reference dd { margin: 0; color: var(--ui-muted); }
-.examples { display: flex; flex-wrap: wrap; gap: 6px; }
+.doc-link { align-self: flex-start; color: var(--ui-muted); font-size: 13.5px; text-underline-offset: 3px; }
+.doc-link:hover { color: var(--ui-text); }
 
 .field { display: flex; flex-direction: column; gap: 8px; margin: 0; }
 .field > span { color: var(--ui-text); font-size: 13.5px; font-weight: 500; }

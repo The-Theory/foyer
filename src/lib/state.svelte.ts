@@ -1,5 +1,5 @@
 import { tick } from 'svelte'
-import { defaultConfig, findFree, grids, kinds, newTile, parseConfig, settle, type Box, type GridSize, type Kind, type Tile } from './config'
+import { center, defaultConfig, findFree, grids, kinds, newTile, parseConfig, settle, type Box, type GridSize, type Kind, type Tile } from './config'
 
 // A pointer drag: the tile follows the pointer in pixels (live: offset, and size when resizing)
 // while the box is the snapped cells it would land on.
@@ -62,6 +62,8 @@ export function setSquares(size: GridSize) {
   app.config.theme.squares = size
   app.config.tiles = settle(app.config.tiles, grids[size])
 }
+
+export const centerLayout = () => (app.config.tiles = center(app.config.tiles, grid()))
 
 const full = () => (app.announce = 'No room left on the board. Make a tile smaller or delete one.')
 
