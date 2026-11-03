@@ -113,6 +113,7 @@ kbd {
   transition: scale .2s var(--ease), box-shadow .2s var(--ease), background-color .2s;
 }
 .tile.frame { background: var(--tile); backdrop-filter: blur(var(--blur)); }
+.tile.resizing { z-index: 5; }
 .tile.lifted { z-index: 5; scale: 1.03; box-shadow: 0 22px 44px -16px rgb(0 0 0 / .6); }
 
 .placeholder {

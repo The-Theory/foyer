@@ -40,8 +40,11 @@ export interface Ring { x: number; y: number; w: number; h: number; r: string }
 
 // ghost: where a dragged tile would land, or the box being drawn for a new tile.
 export function layoutCss(tiles: Tile[], drag: Drag | null, ghost: Box | null, rows: number, ring: Ring | null) {
-  const rules = tiles.map(t => `[data-tile="${t.id}"]{${area(drag?.id === t.id && drag.mode === 'resize' ? drag : t)}}`)
-  if (drag?.mode === 'move') rules.push(`[data-tile="${drag.id}"]{translate:${drag.px}px ${drag.py}px}`)
+  const rules = tiles.map(t => `[data-tile="${t.id}"]{${area(t)}}`)
+  if (drag) {
+    const { x, y, w, h } = drag.live
+    rules.push(`[data-tile="${drag.id}"]{translate:${x}px ${y}px;${w ? `width:${w}px;height:${h}px` : ''}}`)
+  }
   if (ghost) rules.push(`.placeholder{${area(ghost)}}`)
   if (ring) rules.push(`.ring{translate:${ring.x}px ${ring.y}px;width:${ring.w}px;height:${ring.h}px;border-radius:calc(${ring.r} + 5px)}`)
   return `:root{--rows:${rows}}${rules.join('')}`

@@ -1,8 +1,9 @@
 import { tick } from 'svelte'
 import { defaultConfig, findFree, kinds, newTile, parseConfig, type Box, type Kind, type Tile } from './config'
 
-// A pointer drag: the tile follows the pointer by (px, py) while the box is where it would land.
-export interface Drag extends Box { id: string; mode: 'move' | 'resize'; valid: boolean; px: number; py: number }
+// A pointer drag: the tile follows the pointer in pixels (live: offset, and size when resizing)
+// while the box is the snapped cells it would land on.
+export interface Drag extends Box { id: string; mode: 'move' | 'resize'; valid: boolean; live: { x: number; y: number; w: number; h: number } }
 
 // A box being drawn on empty cells; once released, the user picks what goes in it.
 export interface Draft extends Box { valid: boolean; picking: boolean }

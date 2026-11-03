@@ -16,7 +16,7 @@
 
   let board: HTMLDivElement
   let grid: HTMLDivElement
-  let action: { tile: Tile; mode: Mode; edge: Edge; x0: number; y0: number; moved: boolean } | null = null
+  let action: { tile: Tile; mode: Mode; edge: Edge; x0: number; y0: number; w0: number; h0: number; moved: boolean } | null = null
   let swallowClick = false
   let dragInside   = false
 
@@ -25,7 +25,7 @@
   const rows  = $derived(Math.max(1, ...tiles.map(t => t.y + t.h)))
 
   // Spare rows below the layout to drag into; they overflow the board so the page doesn't shift.
-  const ghost    = $derived(app.drag?.mode === 'move' ? app.drag : app.draft)
+  const ghost    = $derived(app.drag ?? app.draft)
   const slotRows = $derived(Math.max(rows, (ghost?.y ?? 0) + (ghost?.h ?? 0)) + 3)
 
   const clamp = (n: number, min: number, max: number) => Math.min(Math.max(n, min), max)
@@ -81,10 +81,7 @@
   // --- Glide on layout changes (FLIP) ------------------------------------------
 
   const layoutKey = $derived(
-    tiles.map(t => {
-      const b = app.drag?.id === t.id && app.drag.mode === 'resize' ? app.drag : t
-      return `${t.id}:${b.x},${b.y},${b.w},${b.h}`
-    }).join('|') + `|${app.drag?.mode === 'move' ? app.drag.id : ''}|${app.config.theme.cell},${app.config.theme.gap},${cols}`,
+    tiles.map(t => `${t.id}:${t.x},${t.y},${t.w},${t.h}`).join('|') + `|${app.drag?.id ?? ''}|${app.config.theme.cell},${app.config.theme.gap},${cols}`,
   )
 
   let before = new Map<string, DOMRect>()
@@ -99,7 +96,7 @@
     if (focused?.isConnected) ring = measure(focused)
     for (const [id, el] of Object.entries(tileEls)) {
       const a = before.get(id)
-      if (!a || !el?.isConnected || (app.drag?.id === id && app.drag.mode === 'move')) continue
+      if (!a || !el?.isConnected || app.drag?.id === id) continue
       const b = el.getBoundingClientRect()
       if (Math.abs(a.left - b.left) + Math.abs(a.top - b.top) + Math.abs(a.width - b.width) + Math.abs(a.height - b.height) < 1) continue
       el.animate(
@@ -141,19 +138,31 @@
     if (e.button !== 0) return
     e.stopPropagation()
     ;(e.currentTarget as Element).setPointerCapture(e.pointerId)
-    action = { tile, mode, edge, x0: e.clientX, y0: e.clientY, moved: false }
+    const rect = tileEls[tile.id]?.getBoundingClientRect()
+    action = { tile, mode, edge, x0: e.clientX, y0: e.clientY, w0: rect?.width ?? 0, h0: rect?.height ?? 0, moved: false }
   }
 
   function move(e: PointerEvent) {
     if (!action) return
-    const { tile, mode, edge, x0, y0 } = action
+    const { tile, mode, edge, x0, y0, w0, h0 } = action
     const px = e.clientX - x0
     const py = e.clientY - y0
     if (!action.moved && Math.hypot(px, py) < 4) return
     action.moved = true
     const size = pitch()
     const box  = boxFor(tile, mode, Math.round(px / size), Math.round(py / size), edge)
-    app.drag = { id: tile.id, ...box, mode, valid: fits(box, tiles, tile.id), px: mode === 'move' ? px : 0, py: mode === 'move' ? py : 0 }
+    app.drag = { id: tile.id, ...box, mode, valid: fits(box, tiles, tile.id), live: mode === 'move' ? { x: px, y: py, w: 0, h: 0 } : stretch(edge, px, py, w0, h0, size) }
+  }
+
+  // Resizing in pixels: the dragged edges follow the pointer, never smaller than one cell.
+  function stretch(edge: Edge, px: number, py: number, w0: number, h0: number, size: number) {
+    const min = size - app.config.theme.gap
+    const w   = edge.includes('e') ? w0 + px : edge.includes('w') ? w0 - px : w0
+    const h   = edge.includes('s') ? h0 + py : edge.includes('n') ? h0 - py : h0
+    const live = { x: 0, y: 0, w: Math.max(min, w), h: Math.max(min, h) }
+    if (edge.includes('w')) live.x = w0 - live.w
+    if (edge.includes('n')) live.y = h0 - live.h
+    return live
   }
 
   function end() {
@@ -329,6 +338,7 @@
         class="tile"
         class:frame={tile.frame}
         class:lifted={lifted(tile)}
+        class:resizing={app.drag?.id === tile.id && app.drag.mode === 'resize'}
         class:selected={app.sheet?.kind === 'tile' && app.sheet.id === tile.id}
         class:invalid={app.drag?.id === tile.id && !app.drag.valid}
         data-tile={tile.id}
