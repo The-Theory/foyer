@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { defaultConfig, palettes, parseConfig, type Look, type LookKey } from './config'
-  import { app } from './state.svelte'
+  import { defaultConfig, grids, palettes, parseConfig, type GridSize, type Look, type LookKey } from './config'
+  import { app, setSquares } from './state.svelte'
   import ImageInput from './ui/ImageInput.svelte'
   import LookFields from './ui/LookFields.svelte'
   import Segmented from './ui/Segmented.svelte'
@@ -59,6 +59,19 @@
   <h2>Page</h2>
   <p>No tiles are selected, so the look below applies to all of them. Click a tile to change just that one, or Shift-click to change several together.</p>
 </header>
+
+{#snippet gridPreview(size: GridSize)}<span class="pv-grid {size}"></span>{/snippet}
+
+<section>
+  <h3>Squares</h3>
+  <p>The page is split into even squares that grow with the window. Fewer squares make every tile bigger.</p>
+  <Segmented
+    label="How many"
+    options={(Object.keys(grids) as GridSize[]).map(size => [size, `${grids[size].cols} × ${grids[size].rows}`])}
+    bind:value={() => t.squares, v => v && setSquares(v)}
+    preview={gridPreview}
+  />
+</section>
 
 <section>
   <h3>Behind the tiles</h3>

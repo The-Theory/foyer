@@ -1,10 +1,6 @@
 /* Page styles read the theme variables generated in css.ts.
    Editing chrome (toolbar, sheet, palette) keeps its own fixed palette so it stays legible on any theme. */
 
-/* One cell's size in pixels, computed on the board from the window (see .board). Registered so
-   it resolves there, not inside each tile, which is a size container of its own. */
-@property --cell { syntax: '<length>'; inherits: true; initial-value: 0px; }
-
 :root {
   --ease:      cubic-bezier(.2, .9, .25, 1);
 
@@ -65,7 +61,6 @@ kbd {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  container-type: size;
   transition: padding .35s var(--ease);
 }
 
@@ -79,7 +74,7 @@ kbd {
 /* --- Grid ------------------------------------------------------------------ */
 
 .board {
-  --cell:  min(100cqw / var(--cols), 100cqh / var(--rows));
+  /* --cell, one square in pixels, is set from Grid.svelte. */
   --inset: calc(var(--cell) * .07);
   position: relative;
   flex: none;
@@ -168,7 +163,7 @@ kbd {
   align-items: center;
   justify-content: center;
 }
-[data-kind='link'] .icon  { width: var(--icon-size); height: var(--icon-size); font-size: calc(var(--icon-size) * .45); transition: translate .2s var(--ease); }
+[data-kind='link'] .icon  { --size: calc(44cqmin * var(--icon-scale)); width: var(--size); height: var(--size); font-size: calc(var(--size) * .45); transition: translate .2s var(--ease); }
 [data-kind='link'] .label { position: absolute; bottom: 10cqmin; max-width: 86%; font-size: 11.5cqmin; transition: opacity .2s; }
 .labels-always [data-kind='link'] .icon,
 .labels-hover  [data-kind='link'] .item:is(:hover, :focus-visible) .icon { translate: 0 -9cqmin; }
@@ -190,13 +185,13 @@ kbd {
 .group .hint { margin: 0 calc(var(--u) * 6); }
 .group .items { overflow-y: auto; scrollbar-width: none; min-height: 0; padding: calc(var(--u) * 4); margin: calc(var(--u) * -4); }
 
-.layout-grid .items { display: grid; grid-template-columns: repeat(auto-fill, minmax(calc(var(--u) * 64), 1fr)); align-content: start; gap: calc(var(--u) * 2); }
+.layout-grid .items { display: grid; grid-template-columns: repeat(auto-fill, minmax(calc(var(--u) * 64 * var(--icon-scale)), 1fr)); align-content: start; gap: calc(var(--u) * 2); }
 .layout-grid .item  { display: flex; flex-direction: column; align-items: center; gap: calc(var(--u) * 7); padding: calc(var(--u) * 10) calc(var(--u) * 4) calc(var(--u) * 8); border-radius: calc(var(--radius) * .6); font-size: calc(var(--u) * 11.5); }
-.layout-grid .icon  { width: calc(var(--u) * 32); height: calc(var(--u) * 32); font-size: calc(var(--u) * 14); }
+.layout-grid .icon  { width: calc(var(--u) * 32 * var(--icon-scale)); height: calc(var(--u) * 32 * var(--icon-scale)); font-size: calc(var(--u) * 14 * var(--icon-scale)); }
 
 .layout-list .items { display: flex; flex-direction: column; gap: calc(var(--u) * 1); }
 .layout-list .item  { display: flex; align-items: center; gap: calc(var(--u) * 11); padding: calc(var(--u) * 7) calc(var(--u) * 8); border-radius: calc(var(--radius) * .5); font-size: calc(var(--u) * 14); }
-.layout-list .icon  { width: calc(var(--u) * 20); height: calc(var(--u) * 20); font-size: calc(var(--u) * 11); }
+.layout-list .icon  { width: calc(var(--u) * 20 * var(--icon-scale)); height: calc(var(--u) * 20 * var(--icon-scale)); font-size: calc(var(--u) * 11 * var(--icon-scale)); }
 
 /* Clock */
 .clock { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: center; padding: 0 max(5cqw, var(--pad)); }
@@ -503,6 +498,18 @@ kbd {
 .segmented.cards button:hover .preview { outline-color: var(--ui-muted); }
 .segmented.cards button[aria-checked='true'] .preview { outline: 2px solid var(--ui-text); outline-offset: 2px; }
 
+.pv-grid {
+  --n: 12;
+  width: 48px;
+  height: 30px;
+  background:
+    linear-gradient(to right, var(--bg) 1.5px, transparent 1.5px) 0 0 / calc(48px / var(--n)) calc(48px / var(--n)),
+    linear-gradient(to bottom, var(--bg) 1.5px, transparent 1.5px) 0 0 / calc(48px / var(--n)) calc(48px / var(--n)),
+    color-mix(in srgb, var(--text) 30%, transparent);
+}
+.pv-grid.s  { --n: 16; }
+.pv-grid.l  { --n: 10; }
+.pv-grid.xl { --n: 8; }
 .pv-fill { width: 34px; height: 34px; border-radius: 8px; border: 1px dashed var(--faint); }
 .pv-fill.glass { border: 0; background: color-mix(in srgb, var(--text) 12%, transparent); }
 .pv-fill.solid { border: 0; background: var(--text); }

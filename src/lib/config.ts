@@ -9,9 +9,16 @@ export interface Link { id: string; title: string; url: string; icon: Icon }
 
 export interface Box { x: number; y: number; w: number; h: number }
 
-// The page is always the same grid of squares, scaled to fit the window,
-// so a layout looks the same on any screen.
-export const board = { cols: 12, rows: 8 }
+// The page is a fixed grid of squares, scaled to fit the window, so a layout looks
+// the same on any screen. The user picks how many squares: fewer means bigger tiles.
+export interface Grid { cols: number; rows: number }
+export const grids = {
+  s:  { cols: 16, rows: 10 },
+  m:  { cols: 12, rows: 8 },
+  l:  { cols: 10, rows: 6 },
+  xl: { cols: 8, rows: 5 },
+} satisfies Record<string, Grid>
+export type GridSize = keyof typeof grids
 
 // How a tile looks. The page sets every key; a tile stores only the ones it changes.
 export interface Look {
@@ -38,6 +45,7 @@ export type Tile = LinkTile | GroupTile | ClockTile | WeatherTile | NoteTile
 export type Kind = Tile['kind']
 
 export interface Theme extends Look {
+  squares: GridSize
   background: string
   image: string
   imageFit: 'cover' | 'contain' | 'auto'
@@ -94,15 +102,36 @@ const overlaps = (a: Box, b: Box) => a.x < b.x + b.w && b.x < a.x + a.w && a.y <
 
 export const fits = (box: Box, tiles: Tile[], skip?: string) => tiles.every(t => t.id === skip || !overlaps(box, t))
 
-export const inBoard = (b: Box) => b.x >= 0 && b.y >= 0 && b.x + b.w <= board.cols && b.y + b.h <= board.rows
+const inGrid = (b: Box, g: Grid) => b.x >= 0 && b.y >= 0 && b.x + b.w <= g.cols && b.y + b.h <= g.rows
 
 // First free spot for a w×h tile, shrinking it down to one cell if nothing that size fits.
-export function findFree(w: number, h: number, tiles: Tile[]): Box | null {
-  for (; w >= 1 && h >= 1; w > h ? w-- : h--)
-    for (let y = 0; y + h <= board.rows; y++)
-      for (let x = 0; x + w <= board.cols; x++)
+export function findFree(w: number, h: number, tiles: Tile[], g: Grid): Box | null {
+  for (w = Math.min(w, g.cols), h = Math.min(h, g.rows); w >= 1 && h >= 1; w > h ? w-- : h--)
+    for (let y = 0; y + h <= g.rows; y++)
+      for (let x = 0; x + w <= g.cols; x++)
         if (fits({ x, y, w, h }, tiles)) return { x, y, w, h }
   return null
+}
+
+// Fits tiles onto a grid: the layout is re-centered if it fits as a whole; tiles that still
+// don't fit (or overlap) move to free squares rather than vanish.
+export function settle(tiles: Tile[], g: Grid): Tile[] {
+  if (!tiles.length) return tiles
+  const left   = Math.min(...tiles.map(t => t.x))
+  const top    = Math.min(...tiles.map(t => t.y))
+  const width  = Math.max(...tiles.map(t => t.x + t.w)) - left
+  const height = Math.max(...tiles.map(t => t.y + t.h)) - top
+  const dx = width <= g.cols && !tiles.every(t => inGrid(t, g)) ? Math.floor((g.cols - width) / 2) - left : 0
+  const dy = height <= g.rows && !tiles.every(t => inGrid(t, g)) ? Math.floor((g.rows - height) / 2) - top : 0
+
+  const placed: Tile[] = []
+  for (const tile of tiles) {
+    const moved = { ...tile, x: tile.x + dx, y: tile.y + dy }
+    const spot  = inGrid(moved, g) && fits(moved, placed) ? moved : findFree(tile.w, tile.h, placed, g)
+    if (spot) placed.push({ ...tile, ...spot })
+    else console.warn('Foyer: no room left on the board for a tile', tile)
+  }
+  return placed
 }
 
 // --- Links -------------------------------------------------------------------
@@ -134,7 +163,7 @@ export function defaultConfig(): Config {
   return {
     version: 1,
     theme: {
-      background: '#1c1c1e', image: '', imageFit: 'cover', imagePosition: 'center', dim: 0,
+      squares: 'm', background: '#1c1c1e', image: '', imageFit: 'cover', imagePosition: 'center', dim: 0,
       fill: 'glass', fillColor: '#ffffff', corners: 'soft', text: '#f2f1ed', font: 'system', iconSize: 'm', iconShape: 'rounded',
       labels: 'hover', newTab: false, editCorner: true, pageTitle: 'New Tab', css: '',
     },
@@ -177,12 +206,6 @@ export function parseConfig(json: string): Config {
     const { frame: _frame, ...rest } = t
     return [{ ...newTile(t.kind as Kind, box as Box), ...rest, style } as Tile]
   })
-  // Tiles that no longer fit the board (or overlap) move to free space rather than vanish.
-  const placed: Tile[] = []
-  for (const tile of tiles) {
-    const spot = inBoard(tile) && fits(tile, placed) ? tile : findFree(tile.w, tile.h, placed)
-    if (spot) placed.push({ ...tile, ...spot })
-    else console.warn('Foyer: no room left on the board for a tile', tile)
-  }
-  return { version: 1, theme, tiles: placed }
+  if (!(theme.squares in grids)) theme.squares = defaults.squares
+  return { version: 1, theme, tiles: settle(tiles, grids[theme.squares]) }
 }

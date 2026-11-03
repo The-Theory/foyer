@@ -1,10 +1,10 @@
 <script lang="ts">
   import { tick, untrack } from 'svelte'
   import { fade, scale } from 'svelte/transition'
-  import { board as size, fits, isUrl, kinds, linkName, newLink, type Box, type Kind, type Tile } from './config'
+  import { fits, isUrl, kinds, linkName, newLink, type Box, type Kind, type Tile } from './config'
   import { layoutCss, type Ring } from './css'
   import { arrows, firstIn, focusOnMount, isNavTarget, navTarget } from './nav'
-  import { addTile, app, ease, editTile, handleEls, keys, ms, removeTiles, tileEls } from './state.svelte'
+  import { addTile, app, ease, editTile, grid as gridSize, handleEls, keys, ms, removeTiles, tileEls } from './state.svelte'
   import Clock from './tiles/Clock.svelte'
   import Weather from './tiles/Weather.svelte'
   import LinkItem from './ui/LinkItem.svelte'
@@ -21,7 +21,18 @@
   let dragInside   = false
 
   const tiles = $derived(app.config.tiles)
-  const { cols, rows } = size
+  const cols  = $derived(gridSize().cols)
+  const rows  = $derived(gridSize().rows)
+
+  // One square's size in whole pixels, measured from the page's free area. Measured in JS rather than
+  // with CSS container units, which Firefox doesn't recompute while the page's padding animates.
+  let cell = $state(0)
+  $effect(() => {
+    const [c, r] = [cols, rows]
+    const observer = new ResizeObserver(([entry]) => (cell = Math.floor(Math.min(entry.contentRect.width / c, entry.contentRect.height / r))))
+    if (board.parentElement) observer.observe(board.parentElement)
+    return () => observer.disconnect()
+  })
   const ghost = $derived(app.drag ?? app.draft)
 
   const clamp = (n: number, min: number, max: number) => Math.min(Math.max(n, min), max)
@@ -72,12 +83,12 @@
     })
   })
 
-  const css = $derived(layoutCss(tiles, app.drag, ghost, app.keyboard ? ring : null))
+  const css = $derived(layoutCss(tiles, app.drag, ghost, app.keyboard ? ring : null, cell))
 
   // --- Glide on layout changes (FLIP) ------------------------------------------
 
   const layoutKey = $derived(
-    tiles.map(t => `${t.id}:${t.x},${t.y},${t.w},${t.h}`).join('|') + `|${app.drag?.id ?? ''}`,
+    tiles.map(t => `${t.id}:${t.x},${t.y},${t.w},${t.h}`).join('|') + `|${app.drag?.id ?? ''}|${cols}`,
   )
 
   let before = new Map<string, DOMRect>()

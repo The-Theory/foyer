@@ -1,5 +1,5 @@
 import { tick } from 'svelte'
-import { defaultConfig, findFree, kinds, newTile, parseConfig, type Box, type Kind, type Tile } from './config'
+import { defaultConfig, findFree, grids, kinds, newTile, parseConfig, settle, type Box, type GridSize, type Kind, type Tile } from './config'
 
 // A pointer drag: the tile follows the pointer in pixels (live: offset, and size when resizing)
 // while the box is the snapped cells it would land on.
@@ -55,6 +55,14 @@ export function openPage() {
   app.selected = []
 }
 
+export const grid = () => grids[app.config.theme.squares]
+
+// Changing how many squares the page has refits the tiles onto the new grid.
+export function setSquares(size: GridSize) {
+  app.config.theme.squares = size
+  app.config.tiles = settle(app.config.tiles, grids[size])
+}
+
 const full = () => (app.announce = 'No room left on the board. Make a tile smaller or delete one.')
 
 // Selects the tile and moves keyboard focus into its settings.
@@ -66,7 +74,7 @@ export function editTile(id: string) {
 
 export function addTile(kind: Kind, patch: Partial<Tile> = {}, at?: Box) {
   const [w, h] = kinds[kind].size
-  const box = at ?? findFree(w, h, app.config.tiles)
+  const box = at ?? findFree(w, h, app.config.tiles, grid())
   if (!box) return full()
   const tile = { ...newTile(kind, box), ...patch } as Tile
   app.config.tiles.push(tile)
@@ -76,7 +84,7 @@ export function addTile(kind: Kind, patch: Partial<Tile> = {}, at?: Box) {
 // Opens the tile picker on the first free cell, for adding without a pointer.
 export function startDraft() {
   setEditing(true)
-  const box = findFree(1, 1, app.config.tiles)
+  const box = findFree(1, 1, app.config.tiles, grid())
   if (box) app.draft = { ...box, valid: true, picking: true }
   else full()
 }
