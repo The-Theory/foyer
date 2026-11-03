@@ -25,9 +25,17 @@
 {#snippet sizePreview(v: Look['iconSize'])}<span class="pv-icon size-{v}"></span>{/snippet}
 {#snippet shapePreview(v: Look['iconShape'])}<span class="pv-icon shape-{v}"></span>{/snippet}
 
-<Segmented label="Background" options={[['none', 'None'], ['glass', 'Frosted'], ['solid', 'Solid']]} bind:value={() => get('fill'), v => v && set('fill', v)} preview={fillPreview} />
+<Segmented label="Background" options={[['none', 'None'], ['glass', 'Frosted'], ['solid', 'Color']]} bind:value={() => get('fill'), v => v && set('fill', v)} preview={fillPreview} />
 {#if get('fill') !== 'none'}
   <Swatches label="Color" colors={palettes.ink} bind:value={() => get('fillColor'), v => v && set('fillColor', v)} />
+  <Segmented
+    label="Opacity"
+    options={[['5', '5%'], ['10', '10%'], ['20', '20%'], ['40', '40%'], ['70', '70%'], ['100', '100%']]}
+    bind:value={() => get('fillOpacity'), v => v && set('fillOpacity', v)}
+  />
+  {#if get('fill') === 'glass'}
+    <Segmented label="Frost" options={[['light', 'Light'], ['medium', 'Medium'], ['heavy', 'Heavy']]} bind:value={() => get('frost'), v => v && set('frost', v)} />
+  {/if}
 {/if}
 <Segmented label="Corners" options={[['square', 'Square'], ['soft', 'Rounded'], ['round', 'Round']]} bind:value={() => get('corners'), v => v && set('corners', v)} preview={cornerPreview} />
 <Swatches label="Text color" colors={palettes.ink} bind:value={() => get('text'), v => v && set('text', v)} />

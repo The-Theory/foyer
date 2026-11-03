@@ -35,6 +35,9 @@
   })
   const ghost = $derived(app.drag ?? app.draft)
 
+  // Cells under a tile, so their empty-square markers don't show through see-through tiles.
+  const taken = $derived(new Set(tiles.flatMap(t => Array.from({ length: t.w * t.h }, (_, k) => (t.y + Math.floor(k / t.w)) * cols + t.x + (k % t.w)))))
+
   const clamp = (n: number, min: number, max: number) => Math.min(Math.max(n, min), max)
   const label = (tile: Tile) => (tile.kind === 'link' ? linkName(tile.link) || 'Link' : tile.kind === 'group' ? tile.title : kinds[tile.kind].name)
   const lifted = (tile: Tile) => app.grab?.id === tile.id || (app.drag?.id === tile.id && app.drag.mode === 'move')
@@ -334,7 +337,7 @@
       onpointerup={drawEnd}
       onpointercancel={drawEnd}
     >
-      {#each { length: cols * rows }, i (i)}<div class="slot"></div>{/each}
+      {#each { length: cols * rows }, i (i)}<div class="slot" class:taken={taken.has(i)}></div>{/each}
     </div>
   {/if}
 

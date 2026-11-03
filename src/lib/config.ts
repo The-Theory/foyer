@@ -24,6 +24,8 @@ export type GridSize = keyof typeof grids
 export interface Look {
   fill:      'none' | 'glass' | 'solid'
   fillColor: string
+  fillOpacity: '5' | '10' | '20' | '40' | '70' | '100'
+  frost:     'light' | 'medium' | 'heavy'
   corners:   'square' | 'soft' | 'round'
   text:      string
   font:      string
@@ -32,7 +34,7 @@ export interface Look {
 }
 export type LookKey   = keyof Look
 export type TileStyle = Partial<Look>
-export const lookKeys = ['fill', 'fillColor', 'corners', 'text', 'font', 'iconSize', 'iconShape'] as const satisfies readonly LookKey[]
+export const lookKeys = ['fill', 'fillColor', 'fillOpacity', 'frost', 'corners', 'text', 'font', 'iconSize', 'iconShape'] as const satisfies readonly LookKey[]
 
 interface TileBase extends Box { id: string; style: TileStyle }
 
@@ -169,7 +171,7 @@ export function defaultConfig(): Config {
     version: 1,
     theme: {
       squares: 'm', background: '#1c1c1e', image: '', imageFit: 'cover', imagePosition: 'center', dim: 0,
-      fill: 'glass', fillColor: '#ffffff', corners: 'soft', text: '#f2f1ed', font: 'system', iconSize: 'm', iconShape: 'rounded',
+      fill: 'glass', fillColor: '#ffffff', fillOpacity: '10', frost: 'medium', corners: 'soft', text: '#f2f1ed', font: 'system', iconSize: 'm', iconShape: 'rounded',
       labels: 'hover', newTab: false, editCorner: true, pageTitle: 'New Tab', css: '',
     },
     tiles: [
@@ -208,9 +210,11 @@ export function parseConfig(json: string): Config {
     if (!(typeof t.kind === 'string' && t.kind in kinds) || !Object.values(box).every(Number.isInteger)) return []
     const style: TileStyle = Object.fromEntries(Object.entries(isRecord(t.style) ? t.style : {}).filter(isLook))
     if (t.frame === false) style.fill = 'none' // layouts from before tiles had a fill choice
+    if (style.fill === 'solid' && !style.fillOpacity) style.fillOpacity = '100' // solid used to mean opaque
     const { frame: _frame, ...rest } = t
     return [{ ...newTile(t.kind as Kind, box as Box), ...rest, style } as Tile]
   })
   if (!(theme.squares in grids)) theme.squares = defaults.squares
+  if (theme.fill === 'solid' && !('fillOpacity' in saved)) theme.fillOpacity = '100'
   return { version: 1, theme, tiles: settle(tiles, grids[theme.squares]) }
 }

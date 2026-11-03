@@ -98,6 +98,7 @@ kbd {
   transition: background-color .15s;
 }
 .slot:hover { background: color-mix(in srgb, var(--text) 9%, transparent); }
+.slot.taken { visibility: hidden; }
 
 .tile {
   position: relative;
@@ -501,7 +502,7 @@ kbd {
 .pv-grid.xl { --n: 8; }
 .pv-fill { width: 34px; height: 34px; border-radius: 8px; border: 1px dashed var(--faint); }
 .pv-fill.glass { border: 0; background: color-mix(in srgb, var(--text) 12%, transparent); }
-.pv-fill.solid { border: 0; background: var(--text); }
+.pv-fill.solid { border: 0; background: color-mix(in srgb, var(--text) 70%, transparent); }
 .pv-corners { width: 34px; height: 34px; background: color-mix(in srgb, var(--text) 16%, transparent); }
 .pv-corners.soft { border-radius: 8px; }
 .pv-corners.round { border-radius: 50%; }

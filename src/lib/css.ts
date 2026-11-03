@@ -7,14 +7,14 @@ import type { Drag } from './state.svelte'
 const decls = (vars: Record<string, string | number>) => Object.entries(vars).map(([name, value]) => `${name}:${value};`).join('')
 
 // Each look choice is a fixed recipe, sized relative to the cell so it reads the same at any window size.
-const fills   = { none: 'transparent', glass: (c: string) => `color-mix(in srgb, ${c} 9%, transparent)`, solid: (c: string) => c }
+const frosts  = { light: '8px', medium: '18px', heavy: '40px' }
 const corners = { square: 0, soft: 0.16, round: 0.5 } // share of one cell
 const icons   = { s: 0.7, m: 1, l: 1.35 } // scale on each tile kind's usual icon size
 const shapes  = { square: '6%', rounded: '24%', circle: '50%' }
 
 const lookVars = (l: Look) => ({
-  '--fill':        l.fill === 'none' ? fills.none : fills[l.fill](l.fillColor),
-  '--blur':        l.fill === 'glass' ? '18px' : '0px',
+  '--fill':        l.fill === 'none' ? 'transparent' : `color-mix(in srgb, ${l.fillColor} ${l.fillOpacity}%, transparent)`,
+  '--blur':        l.fill === 'glass' ? frosts[l.frost] : '0px',
   '--corner':      corners[l.corners],
   '--text':        l.text,
   '--font':        fonts[l.font] ?? l.font,
