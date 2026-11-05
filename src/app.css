@@ -31,7 +31,6 @@ body {
   background-size: auto, var(--fit);
   background-position: center, var(--pos);
   background-repeat: no-repeat;
-  background-attachment: fixed;
   color: var(--text);
   font-family: var(--font);
   -webkit-font-smoothing: antialiased;
@@ -102,15 +101,27 @@ kbd {
 
 .tile {
   position: relative;
+  z-index: 0;
   container-type: size;
   margin: var(--inset);
   min-width: 0;
-  background: var(--fill);
-  backdrop-filter: blur(var(--blur));
   border-radius: var(--radius);
   color: var(--text);
   font-family: var(--font);
-  transition: scale .2s var(--ease), box-shadow .2s var(--ease), background-color .2s;
+  transition: scale .2s var(--ease), box-shadow .2s var(--ease);
+}
+/* The fill and frost sit on their own layer with nothing inside it. Firefox re-blurs only the part of
+   a frosted element that repaints, so frost on the tile itself tore wherever its contents changed. */
+.tile::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: var(--fill);
+  backdrop-filter: blur(var(--blur));
+  pointer-events: none;
+  transition: background-color .2s;
 }
 .tile.resizing { z-index: 5; }
 .tile.lifted { z-index: 5; scale: 1.03; box-shadow: 0 22px 44px -16px rgb(0 0 0 / .6); }
@@ -234,7 +245,7 @@ kbd {
   scrollbar-width: none;
 }
 .note::placeholder { color: var(--faint); }
-.tile:has(.note:focus) { background-color: color-mix(in srgb, var(--fill), var(--text) 4%); }
+.tile:has(.note:focus)::before { background-color: color-mix(in srgb, var(--fill), var(--text) 4%); }
 
 /* --- Edit mode ------------------------------------------------------------- */
 
