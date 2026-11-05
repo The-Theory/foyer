@@ -25,12 +25,14 @@
 /* The page never scrolls in any direction; panels scroll inside themselves. */
 html, body { margin: 0; height: 100%; overflow: hidden; overscroll-behavior: none; }
 
+/* The page background, reused by the tiles' frost. */
+:root {
+  --backdrop: linear-gradient(rgb(0 0 0 / var(--dim)), rgb(0 0 0 / var(--dim))) no-repeat,
+              var(--image) var(--pos) / var(--fit) no-repeat var(--bg);
+}
+
 body {
-  background-color: var(--bg);
-  background-image: linear-gradient(rgb(0 0 0 / var(--dim)), rgb(0 0 0 / var(--dim))), var(--image);
-  background-size: auto, var(--fit);
-  background-position: center, var(--pos);
-  background-repeat: no-repeat;
+  background: var(--backdrop);
   color: var(--text);
   font-family: var(--font);
   -webkit-font-smoothing: antialiased;
@@ -110,18 +112,20 @@ kbd {
   font-family: var(--font);
   transition: scale .2s var(--ease), box-shadow .2s var(--ease);
 }
-/* The fill and frost sit on their own layer with nothing inside it. Firefox re-blurs only the part of
-   a frosted element that repaints, so frost on the tile itself tore wherever its contents changed. */
+/* Frost is the tile's own blurred copy of the page background, not backdrop-filter: Firefox re-blurs
+   only the part of the page that repaints, so hovering anything tore the frost on other tiles.
+   The layer reaches past the tile so the blur has picture to sample at the edges, then is clipped back. */
 .tile::before {
+  --reach: calc(var(--blur) * 2);
   content: '';
   position: absolute;
-  inset: 0;
+  inset: calc(var(--reach) * -1);
   z-index: -1;
-  border-radius: inherit;
-  background: var(--fill);
-  backdrop-filter: blur(var(--blur));
+  background: linear-gradient(var(--fill), var(--fill)), var(--backdrop);
+  background-attachment: fixed;
+  filter: blur(var(--blur));
+  clip-path: inset(var(--reach) round var(--radius));
   pointer-events: none;
-  transition: background-color .2s;
 }
 .tile.resizing { z-index: 5; }
 .tile.lifted { z-index: 5; scale: 1.03; box-shadow: 0 22px 44px -16px rgb(0 0 0 / .6); }
