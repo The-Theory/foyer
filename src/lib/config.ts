@@ -44,7 +44,9 @@ export type GroupTile   = TileBase & { kind: 'group'; title: string; showTitle: 
 export type ClockTile   = TileBase & { kind: 'clock'; hour12: boolean; seconds: boolean; date: boolean }
 export type WeatherTile = TileBase & { kind: 'weather'; place: string; lat: number | null; lon: number | null; fahrenheit: boolean }
 export type NoteTile    = TileBase & { kind: 'note'; text: string }
-export type Tile = LinkTile | GroupTile | ClockTile | WeatherTile | NoteTile
+export type WebTile     = TileBase & { kind: 'web'; url: string; zoom: '50' | '75' | '100'; offline: string }
+export type ImageTile   = TileBase & { kind: 'image'; src: string; fit: 'cover' | 'contain' }
+export type Tile = LinkTile | GroupTile | ClockTile | WeatherTile | NoteTile | WebTile | ImageTile
 export type Kind = Tile['kind']
 
 export interface Theme extends Look {
@@ -68,6 +70,8 @@ export const kinds: Record<Kind, { name: string; about: string; size: [number, n
   clock:   { name: 'Clock',   about: 'Time and date',                 size: [4, 2] },
   weather: { name: 'Weather', about: 'Current conditions for a city', size: [2, 2] },
   note:    { name: 'Note',    about: 'Text that saves as you type',   size: [2, 2] },
+  web:     { name: 'Web page', about: 'A live site inside the tile',  size: [4, 3] },
+  image:   { name: 'Image',   about: 'A picture',                     size: [2, 2] },
 }
 
 export const fonts: Record<string, string> = {
@@ -95,6 +99,8 @@ export function newTile(kind: Kind, box: Box): Tile {
     case 'clock':   return { ...base, kind, hour12: false, seconds: false, date: true }
     case 'weather': return { ...base, kind, place: '', lat: null, lon: null, fahrenheit: false }
     case 'note':    return { ...base, kind, text: '' }
+    case 'web':     return { ...base, kind, url: '', zoom: '100', offline: '' }
+    case 'image':   return { ...base, kind, src: '', fit: 'cover' }
   }
 }
 

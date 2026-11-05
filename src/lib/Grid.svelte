@@ -7,6 +7,7 @@
   import { addTile, app, ease, editTile, grid as gridSize, handleEls, keys, ms, removeTiles, tileEls } from './state.svelte'
   import Clock from './tiles/Clock.svelte'
   import Weather from './tiles/Weather.svelte'
+  import Web from './tiles/Web.svelte'
   import LinkItem from './ui/LinkItem.svelte'
 
   type Mode = 'move' | 'resize'
@@ -383,6 +384,10 @@
           <Clock {tile} />
         {:else if tile.kind === 'weather'}
           <Weather {tile} />
+        {:else if tile.kind === 'web'}
+          <Web {tile} />
+        {:else if tile.kind === 'image'}
+          {#if tile.src}<img class="picture fit-{tile.fit}" src={tile.src} alt="" draggable="false" />{:else}<p class="hint padded">No image</p>{/if}
         {:else}
           <textarea
             class="note"

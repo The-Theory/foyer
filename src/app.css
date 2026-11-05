@@ -255,6 +255,18 @@ kbd {
 .weather .meta { display: flex; justify-content: space-between; gap: 6px; margin-top: 2px; font-size: 7.5cqmin; color: var(--muted); }
 .weather .meta span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
+/* Web page: a live site, optionally zoomed out to fit more of it. */
+.web { --zoom: 1; position: absolute; inset: 0; overflow: hidden; border-radius: inherit; }
+.web.zoom-75 { --zoom: .75; }
+.web.zoom-50 { --zoom: .5; }
+.web iframe { display: block; width: calc(100% / var(--zoom)); height: calc(100% / var(--zoom)); border: 0; scale: var(--zoom); transform-origin: 0 0; }
+.web .offline { display: grid; place-items: center; height: 100%; box-sizing: border-box; margin: 0; padding: var(--pad); text-align: center; font-size: calc(var(--u) * 15); color: var(--muted); }
+
+/* Image */
+.picture { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: inherit; }
+.picture.fit-contain { object-fit: contain; }
+.tile .hint.padded { padding: var(--pad); }
+
 /* Note */
 .note {
   position: absolute;

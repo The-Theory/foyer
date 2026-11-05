@@ -4,6 +4,7 @@
   import { kinds, linkName, newLink, type Link, type Look, type LookKey, type Tile, type WeatherTile } from './config'
   import { app, deselect, removeTiles } from './state.svelte'
   import Icon from './ui/Icon.svelte'
+  import ImageInput from './ui/ImageInput.svelte'
   import LinkFields from './ui/LinkFields.svelte'
   import Segmented from './ui/Segmented.svelte'
   import LookFields from './ui/LookFields.svelte'
@@ -139,9 +140,22 @@
     bind:value={() => (tile.fahrenheit ? 'f' : 'c'), unit => (tile.fahrenheit = unit === 'f')}
   />
   </section>
+{:else if tile.kind === 'web'}
+  <section>
+  <label class="field"><span>Address</span><input bind:value={tile.url} placeholder="example.com" spellcheck="false" use:focusOnMount={focus} /></label>
+  <p>Some sites don't allow being shown inside a tile and stay blank.</p>
+  <Segmented label="Zoom" options={[['100', '100%'], ['75', '75%'], ['50', '50%']]} bind:value={tile.zoom} />
+  <label class="field"><span>When offline, show</span><input bind:value={tile.offline} placeholder="Offline" /></label>
+  </section>
+
+{:else if tile.kind === 'image'}
+  <section>
+  <ImageInput label="Image" bind:value={tile.src} />
+  <Segmented label="Fit" options={[['cover', 'Fill'], ['contain', 'Fit']]} bind:value={tile.fit} />
+  </section>
 {/if}
 
-<LookFields {get} {set} icons={tiles.some(t => t.kind === 'link' || t.kind === 'group')} />
+<LookFields {get} {set} text={tiles.some(t => t.kind !== 'image')} icons={tiles.some(t => t.kind === 'link' || t.kind === 'group')} />
 
 {#if changed}
   <section>
