@@ -1,7 +1,7 @@
 {
   "name": "foyer",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.2.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "check": "svelte-check --tsconfig ./tsconfig.app.json && tsc -p tsconfig.node.json",
     "firefox": "vite build && web-ext run -s dist",
-    "package": "vite build && web-ext build -s dist -a release --overwrite-dest",
+    "chrome": "vite build && node scripts/chrome.js",
+    "package": "npm run chrome && web-ext build -s dist -a release --overwrite-dest && web-ext build -s dist-chrome -a release -n foyer-chrome-{version}.zip --overwrite-dest",
     "lint:ext": "vite build && web-ext lint -s dist",
     "sign": "vite build && web-ext sign -s dist --channel unlisted -a release"
   },

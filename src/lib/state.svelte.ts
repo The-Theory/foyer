@@ -1,4 +1,5 @@
 import { tick } from 'svelte'
+import { webext } from './webext'
 import { center, defaultConfig, findFree, grids, kinds, newTile, parseConfig, settle, type Box, type GridSize, type Kind, type Tile } from './config'
 
 // A pointer drag: the tile follows the pointer in pixels (live: offset, and size when resizing)
@@ -112,9 +113,9 @@ export function deselect() {
 }
 
 // --- Persistence -------------------------------------------------------------
-// The extension uses browser.storage.local; plain `npm run dev` falls back to localStorage.
+// The extension uses its own storage; plain `npm run dev` falls back to localStorage.
 
-const ext = typeof browser !== 'undefined' && browser.storage ? browser.storage.local : null
+const ext = webext?.storage.local
 const key = 'config'
 let saved = ''
 
@@ -203,6 +204,6 @@ export function persist() {
     if (area !== 'local' || typeof value !== 'string' || value === saved) return
     adopt(value)
   }
-  browser.storage.onChanged.addListener(onChange)
-  $effect(() => () => browser.storage.onChanged.removeListener(onChange))
+  webext?.storage.onChanged.addListener(onChange)
+  $effect(() => () => webext?.storage.onChanged.removeListener(onChange))
 }

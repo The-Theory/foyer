@@ -3,6 +3,7 @@
   import { allLinks, hostOf, kinds, linkName, safeUrl, type Kind, type Link } from './config'
   import { addTile, app, keys, ms, openPage, setEditing } from './state.svelte'
   import { focusOnMount } from './nav'
+  import { webext } from './webext'
   import Icon from './ui/Icon.svelte'
 
   let { query = $bindable() }: { query: string } = $props()
@@ -60,7 +61,7 @@
     if (r?.type === 'link') return go(safeUrl(r.link.url), newTab)
     close()
     if (r) return r.run()
-    if (typeof browser !== 'undefined' && browser.search?.query) browser.search.query({ text: query, disposition: newTab ? 'NEW_TAB' : 'CURRENT_TAB' })
+    if (webext?.search?.query) webext.search.query({ text: query, disposition: newTab ? 'NEW_TAB' : 'CURRENT_TAB' })
     else go(`https://www.google.com/search?q=${encodeURIComponent(query)}`, newTab)
   }
 
