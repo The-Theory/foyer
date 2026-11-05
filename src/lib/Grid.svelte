@@ -358,7 +358,7 @@
 
     {#each tiles as tile (tile.id)}
       <div
-        class="tile"
+        class="tile labels-{tile.style.labels ?? app.config.theme.labels}"
         class:lifted={lifted(tile)}
         class:resizing={app.drag?.id === tile.id && app.drag.mode === 'resize'}
         class:selected={app.selected.includes(tile.id)}
@@ -371,7 +371,7 @@
         {#if tile.kind === 'link'}
           <LinkItem link={tile.link} />
         {:else if tile.kind === 'group'}
-          <div class="group layout-{tile.layout}">
+          <div class="group layout-{tile.layout}" class:compact={tile.w === 1 || tile.h === 1} class:tall={tile.h > tile.w} class:one={tile.w === 1 && tile.h === 1}>
             {#if tile.showTitle}<h2>{tile.title}</h2>{/if}
             {#if tile.links.length}
               <div class="items">{#each tile.links as link (link.id)}<LinkItem {link} />{/each}</div>

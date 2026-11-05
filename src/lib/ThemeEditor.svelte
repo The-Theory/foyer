@@ -63,20 +63,12 @@
   {/if}
 </section>
 
-<section>
-  <h3>Tiles</h3>
-  <LookFields {get} {set} />
-</section>
+<LookFields {get} {set} tile="Tiles" />
 
 <section>
-  <h3>Links</h3>
-  <Segmented label="Names" options={[['hover', 'On hover'], ['always', 'Always'], ['never', 'Never']]} bind:value={t.labels} />
-  <label class="check"><input type="checkbox" bind:checked={t.newTab} /> Open in new tab</label>
-</section>
-
-<section>
-  <h3>Tab</h3>
-  <label class="field"><span>Title</span><input bind:value={t.pageTitle} /></label>
+  <h3>General</h3>
+  <label class="field"><span>Tab title</span><input bind:value={t.pageTitle} /></label>
+  <label class="check"><input type="checkbox" bind:checked={t.newTab} /> Open links in a new tab</label>
   <label class="check"><input type="checkbox" bind:checked={t.editCorner} /> Edit button in corner</label>
 </section>
 

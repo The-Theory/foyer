@@ -177,12 +177,12 @@ kbd {
 }
 [data-kind='link'] .icon  { --size: calc(44cqmin * var(--icon-scale)); width: var(--size); height: var(--size); font-size: calc(var(--size) * .45); transition: translate .2s var(--ease); }
 [data-kind='link'] .label { position: absolute; bottom: 10cqmin; max-width: 86%; font-size: 11.5cqmin; transition: opacity .2s; }
-.labels-always [data-kind='link'] .icon,
-.labels-hover  [data-kind='link'] .item:is(:hover, :focus-visible) .icon { translate: 0 -9cqmin; }
-.labels-hover  [data-kind='link'] .label { opacity: 0; }
-.labels-hover  [data-kind='link'] .item:is(:hover, :focus-visible) .label { opacity: 1; }
-.labels-never  [data-kind='link'] .label,
-.labels-never  .layout-grid .label { display: none; }
+.labels-always[data-kind='link'] .icon,
+.labels-hover[data-kind='link'] .item:is(:hover, :focus-visible) .icon { translate: 0 -9cqmin; }
+.labels-hover:is([data-kind='link'], :has(.layout-grid)) .label { opacity: 0; transition: opacity .2s; }
+.labels-hover:is([data-kind='link'], :has(.layout-grid)) .item:is(:hover, :focus-visible) .label { opacity: 1; }
+.labels-never[data-kind='link'] .label,
+.labels-never .layout-grid .label { display: none; }
 
 /* Tile contents are measured in --u, 1/88 of a cell, so they scale with the board like a picture. */
 .tile {
@@ -204,6 +204,21 @@ kbd {
 .layout-list .items { display: flex; flex-direction: column; gap: calc(var(--u) * 1); }
 .layout-list .item  { display: flex; align-items: center; gap: calc(var(--u) * 11); padding: calc(var(--u) * 7) calc(var(--u) * 8); border-radius: calc(var(--radius) * .5); font-size: calc(var(--u) * 14); }
 .layout-list .icon  { width: calc(var(--u) * 20 * var(--icon-scale)); height: calc(var(--u) * 20 * var(--icon-scale)); font-size: calc(var(--u) * 11 * var(--icon-scale)); }
+
+/* One square wide or tall: just the icons, in one centered row (or column). Icons shrink to fit
+   before the row starts to scroll. A single square holds a small 2x2 grid. */
+.group.compact { padding: calc(var(--u) * 6 + var(--radius) * .2); }
+.group.compact :is(h2, .label) { display: none; }
+.group.compact .items { flex: 1; display: flex; flex-direction: row; align-items: center; justify-content: safe center; gap: 0; overflow: auto; }
+.group.compact.tall .items { flex-direction: column; }
+.group.compact .item { flex: 0 1 auto; display: grid; place-items: center; min-width: calc(var(--u) * 18); min-height: 0; padding: calc(var(--u) * 4); box-sizing: border-box; }
+.group.compact.tall .item { min-width: 0; min-height: calc(var(--u) * 18); }
+.group.compact .icon { --size: min(calc(var(--u) * 32 * var(--icon-scale)), calc(var(--u) * 40)); width: var(--size); height: auto; max-width: 100%; aspect-ratio: 1; font-size: calc(var(--size) * .45); }
+.group.compact.tall .icon { width: auto; height: var(--size); max-width: none; max-height: 100%; }
+.group.compact.one .items { flex-flow: row wrap; align-content: safe center; }
+.group.compact.one .item { flex: 0 0 50%; min-width: 0; padding: calc(var(--u) * 3); }
+.group.compact.one .icon { --size: calc(var(--u) * 19 * var(--icon-scale)); width: var(--size); height: var(--size); max-width: 100%; }
+.group.compact .hint { margin: auto; text-align: center; font-size: calc(var(--u) * 11); }
 
 /* Clock */
 .clock { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: center; padding: 0 max(5cqw, var(--pad)); }
@@ -511,22 +526,25 @@ kbd {
 .pv-grid.s  { --n: 16; }
 .pv-grid.l  { --n: 10; }
 .pv-grid.xl { --n: 8; }
-.pv-fill { width: 34px; height: 34px; border-radius: 8px; border: 1px dashed var(--faint); }
-.pv-fill.glass { border: 0; background: color-mix(in srgb, var(--text) 12%, transparent); }
-.pv-fill.solid { border: 0; background: color-mix(in srgb, var(--text) 70%, transparent); }
-.pv-corners { width: 34px; height: 34px; background: color-mix(in srgb, var(--text) 16%, transparent); }
-.pv-corners.soft { border-radius: 8px; }
-.pv-corners.round { border-radius: 50%; }
 .pv-font { font-size: 22px; line-height: 1; }
 .pv-font.system  { font-family: system-ui, sans-serif; }
 .pv-font.rounded { font-family: ui-rounded, system-ui, sans-serif; }
 .pv-font.serif   { font-family: ui-serif, Georgia, serif; }
 .pv-font.mono    { font-family: ui-monospace, Menlo, monospace; font-size: 19px; }
-.pv-icon { width: 26px; height: 26px; border-radius: 24%; background: var(--text); }
-.pv-icon.size-s { width: 16px; height: 16px; }
-.pv-icon.size-l { width: 38px; height: 38px; }
-.pv-icon.shape-square { border-radius: 6%; }
+/* Tile previews show a whole tile; icon previews show a plain tile with the icon standing out in it. */
+.pv-tile { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; width: 40px; height: 40px; border-radius: 9px; background: color-mix(in srgb, var(--text) 14%, transparent); }
+.pv-tile.fill-none { background: none; outline: 1px dashed var(--faint); outline-offset: -1px; }
+.pv-tile.fill-solid { background: color-mix(in srgb, var(--text) 70%, transparent); }
+.pv-tile.corners-square { border-radius: 2px; }
+.pv-tile.corners-round { border-radius: 50%; }
+.pv-icon { width: 18px; height: 18px; border-radius: 24%; background: var(--text); }
+.pv-icon.size-s { width: 12px; height: 12px; }
+.pv-icon.size-l { width: 26px; height: 26px; }
+.pv-icon.shape-square { border-radius: 2px; }
 .pv-icon.shape-circle { border-radius: 50%; }
+.pv-label { width: 22px; height: 3px; border-radius: 2px; background: var(--text); }
+.labels-hover .pv-label { opacity: .35; }
+.labels-never .pv-label { display: none; }
 
 .swatches { display: flex; flex-wrap: wrap; gap: 9px; }
 .swatch {

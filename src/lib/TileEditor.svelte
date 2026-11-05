@@ -141,13 +141,13 @@
   </section>
 {/if}
 
-<section>
-  <h3>Look</h3>
-  <LookFields {get} {set} icons={tiles.some(t => t.kind === 'link' || t.kind === 'group')} />
-  {#if changed}
+<LookFields {get} {set} icons={tiles.some(t => t.kind === 'link' || t.kind === 'group')} />
+
+{#if changed}
+  <section>
     <button class="button" onclick={() => tiles.forEach(t => (t.style = {}))}>Reset to page look</button>
-  {/if}
-</section>
+  </section>
+{/if}
 
 <section>
   {#if tile}<p>CSS <code>[data-tile="{tile.id}"]</code></p>{/if}

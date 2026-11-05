@@ -111,7 +111,7 @@
 
 {#if app.ready}
   <main
-    class="page labels-{theme.labels}"
+    class="page"
     class:editing={app.editing}
     onpointerdown={press}
     onpointerup={release}

@@ -31,10 +31,11 @@ export interface Look {
   font:      string
   iconSize:  's' | 'm' | 'l'
   iconShape: 'square' | 'rounded' | 'circle'
+  labels:    'always' | 'hover' | 'never'
 }
 export type LookKey   = keyof Look
 export type TileStyle = Partial<Look>
-export const lookKeys = ['fill', 'fillColor', 'fillOpacity', 'frost', 'corners', 'text', 'font', 'iconSize', 'iconShape'] as const satisfies readonly LookKey[]
+export const lookKeys = ['fill', 'fillColor', 'fillOpacity', 'frost', 'corners', 'text', 'font', 'iconSize', 'iconShape', 'labels'] as const satisfies readonly LookKey[]
 
 interface TileBase extends Box { id: string; style: TileStyle }
 
@@ -53,7 +54,6 @@ export interface Theme extends Look {
   imageFit: 'cover' | 'contain' | 'auto'
   imagePosition: string
   dim: number
-  labels: 'always' | 'hover' | 'never'
   newTab: boolean
   editCorner: boolean
   pageTitle: string
