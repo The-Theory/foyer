@@ -1,4 +1,4 @@
-import { fonts, grids, type Box, type Config, type Look, type Tile } from './config'
+import { allLinks, fonts, grids, type Box, type Config, type Look, type Tile } from './config'
 import type { Drag } from './state.svelte'
 
 // Theme and layout become generated stylesheets, so tiles carry no inline styles
@@ -32,8 +32,15 @@ export function themeCss({ theme: t, tiles }: Config) {
     '--cols':  grids[t.squares].cols,
     '--rows':  grids[t.squares].rows,
   }
+  // Text icons with their own font or colors; unset values follow the tile.
+  const glyphs = allLinks(tiles).flatMap(({ id, icon }) => {
+    if (icon.type !== 'text') return []
+    const vars = { '--glyph-font': icon.font && (fonts[icon.font] ?? icon.font), '--glyph-ink': icon.color, '--glyph-bg': icon.background }
+    const set  = Object.fromEntries(Object.entries(vars).filter(([, v]) => v)) as Record<string, string>
+    return Object.keys(set).length ? [`[data-icon="${id}"]{${decls(set)}}`] : []
+  })
   const own = tiles.filter(tile => Object.keys(tile.style).length).map(tile => `[data-tile="${tile.id}"]{${decls(lookVars({ ...t, ...tile.style }))}}`)
-  return `:root{${decls({ ...page, ...lookVars(t) })}}${own.join('')}\n${t.css}`
+  return `:root{${decls({ ...page, ...lookVars(t) })}}${own.join('')}${glyphs.join('')}\n${t.css}`
 }
 
 const area = (b: Box) => `grid-area:${b.y + 1}/${b.x + 1}/span ${b.h}/span ${b.w}`

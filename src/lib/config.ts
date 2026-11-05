@@ -3,7 +3,7 @@
 export type Icon =
   | { type: 'auto' }
   | { type: 'image'; src: string }
-  | { type: 'text'; value: string }
+  | { type: 'text'; value: string; font?: string; color?: string; background?: string }
 
 export interface Link { id: string; title: string; url: string; icon: Icon }
 
@@ -147,6 +147,8 @@ export function hostOf(url: string) {
   try { return new URL(safeUrl(url)).hostname.replace(/^www\./, '') }
   catch { return url }
 }
+
+export const allLinks = (tiles: Tile[]) => tiles.flatMap(t => (t.kind === 'link' ? [t.link] : t.kind === 'group' ? t.links : []))
 
 export const linkName = (link: Link) => link.title || hostOf(link.url)
 

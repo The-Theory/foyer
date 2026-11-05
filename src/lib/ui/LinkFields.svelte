@@ -1,15 +1,17 @@
 <script lang="ts">
   import { focusOnMount } from '../nav'
-  import { hostOf, type Icon, type Link } from '../config'
+  import { hostOf, palettes, type Icon, type Link } from '../config'
+  import FontField from './FontField.svelte'
   import ImageInput from './ImageInput.svelte'
   import Segmented from './Segmented.svelte'
+  import Swatches from './Swatches.svelte'
 
   let { link, autofocus = false }: { link: Link; autofocus?: boolean } = $props()
 
   const blank: Record<Icon['type'], () => Icon> = {
     auto:  () => ({ type: 'auto' }),
     image: () => ({ type: 'image', src: '' }),
-    text:  () => ({ type: 'text', value: '' }),
+    text:  () => ({ type: 'text', value: '', font: 'system', color: '', background: '' }),
   }
 </script>
 
@@ -29,5 +31,9 @@
 {#if link.icon.type === 'image'}
   <ImageInput label="Image" bind:value={link.icon.src} />
 {:else if link.icon.type === 'text'}
-  <label class="field"><span>Text</span><input bind:value={link.icon.value} maxlength="4" placeholder="An emoji or up to 4 letters" /></label>
+  {@const icon = link.icon}
+  <label class="field"><span>Text</span><input bind:value={icon.value} maxlength="4" placeholder="An emoji or up to 4 letters" /></label>
+  <FontField value={icon.font ?? 'system'} set={font => (icon.font = font)} />
+  <Swatches label="Text color" none="Default" colors={palettes.ink} bind:value={() => icon.color ?? '', v => (icon.color = v)} />
+  <Swatches label="Background" none="Default" colors={palettes.ink} bind:value={() => icon.background ?? '', v => (icon.background = v)} />
 {/if}

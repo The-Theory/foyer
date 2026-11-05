@@ -1,6 +1,6 @@
 <script lang="ts">
   import { scale } from 'svelte/transition'
-  import { hostOf, kinds, linkName, safeUrl, type Kind, type Link } from './config'
+  import { allLinks, hostOf, kinds, linkName, safeUrl, type Kind, type Link } from './config'
   import { addTile, app, keys, ms, openPage, setEditing } from './state.svelte'
   import { focusOnMount } from './nav'
   import Icon from './ui/Icon.svelte'
@@ -11,7 +11,7 @@
     | { type: 'link'; id: string; name: string; link: Link }
     | { type: 'command'; id: string; name: string; hint?: string; run: () => void }
 
-  const links = $derived(app.config.tiles.flatMap(t => (t.kind === 'link' ? [t.link] : t.kind === 'group' ? t.links : [])))
+  const links = $derived(allLinks(app.config.tiles))
 
   const commands: Result[] = [
     { type: 'command', id: 'edit', name: 'Edit layout', hint: `${keys.mod} E`, run: () => setEditing(true) },
