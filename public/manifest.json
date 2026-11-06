@@ -7,6 +7,7 @@
   "chrome_url_overrides": { "newtab": "index.html" },
   "chrome_settings_overrides": { "homepage": "index.html" },
   "permissions": ["storage", "unlimitedStorage", "search"],
+  "host_permissions": ["https://www.google.com/s2/favicons*", "https://*.gstatic.com/faviconV2*"],
   "browser_specific_settings": {
     "gecko": {
       "id": "foyer@theohallgren",

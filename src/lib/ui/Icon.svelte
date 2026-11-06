@@ -1,5 +1,6 @@
 <script lang="ts">
   import { favicon, linkName, type Link } from '../config'
+  import { trimmed } from '../trim'
 
   let { link }: { link: Link } = $props()
 
@@ -12,7 +13,11 @@
 </script>
 
 {#if src && failed !== src}
-  <img class="icon" {src} alt="" draggable="false" onerror={() => (failed = src)} />
+  {#await trimmed(src)}
+    <span class="icon"></span>
+  {:then shown}
+    <img class="icon" src={shown} alt="" draggable="false" onerror={() => (failed = src)} />
+  {/await}
 {:else}
   <span class="icon glyph len-{length}" data-icon={link.icon.type === 'text' ? link.id : undefined}><span>{text}</span></span>
 {/if}
