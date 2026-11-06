@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Foyer",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "A new tab page you lay out yourself: links, groups, clock, weather, notes, web pages and images.",
   "icons": { "48": "icon.svg", "96": "icon.svg" },
   "chrome_url_overrides": { "newtab": "index.html" },
